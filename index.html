@@ -38,7 +38,7 @@
         <div id="closed-overlay" class="fixed inset-0 bg-black/90 z-[100] hidden flex-col items-center justify-center p-6 text-center">
             <div class="text-6xl mb-4">🌙</div>
             <h2 class="text-3xl font-black text-white mb-2">店面休息中</h2>
-            <p class="text-gray-300 font-bold mb-6">營業時間：週一至週六 05:30 ~ 17:00<br>(最後點餐時間 16:50)</p>
+            <p class="text-gray-300 font-bold mb-6">營業時間：週一至週六 05:30 ~ 11:00<br>(最後點餐時間 10:50)</p>
             <p class="text-orange-500 font-bold border-2 border-orange-500 p-3 rounded-xl">期待在營業時間為您服務！</p>
         </div>
 
@@ -109,7 +109,7 @@
         // ==========================================
         // 🚩 老闆專用控制中心
         // ==========================================
-        const FORCE_CLOSE = true;         // 改為 true 則全天休息
+        const FORCE_CLOSE = false;         // 改為 true 則全天休息
         const HOLIDAYS = [];              // 特殊公休日, 例如 ["2026-03-15"]
         const CLOSED_ON_SUNDAY = true;    // 固定週日休息
         // ==========================================
