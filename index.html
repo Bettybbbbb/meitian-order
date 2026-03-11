@@ -27,20 +27,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .nav-btn { 
-            transition: all 0.2s; 
-            border-bottom: 4px solid transparent; 
-            min-width: 90px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .nav-btn.active { 
-            border-bottom: 4px solid #ea580c; 
-            color: #ea580c; 
-            font-weight: 900; 
-            background-color: #fff7ed;
-        }
+        .nav-btn { transition: all 0.2s; border-bottom: 4px solid transparent; min-width: 90px; display: flex; align-items: center; justify-content: center; }
+        .nav-btn.active { border-bottom: 4px solid #ea580c; color: #ea580c; font-weight: 900; background-color: #fff7ed; }
         .modal-enter { animation: slideUp 0.3s ease-out forwards; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         .opt-checkbox:checked + div, .opt-radio:checked + div { background-color: #fff7ed; border-color: #ea580c; color: #ea580c; font-weight: bold; }
@@ -125,9 +113,7 @@
                         <span class="text-gray-600 font-bold text-lg">總計金額</span><span class="text-4xl font-black text-red-600">$<span id="cart-total">0</span></span>
                     </div>
                     <input type="text" id="order-name" placeholder="您的稱呼(必填)" class="w-full border-2 p-3 rounded-xl mb-2 font-bold bg-gray-50 outline-none focus:border-orange-500 text-gray-700">
-                    
                     <input type="tel" id="order-phone" inputmode="numeric" maxlength="11" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);" placeholder="聯絡電話 (8~11 碼數字)" class="w-full border-2 p-3 rounded-xl mb-4 font-bold bg-gray-50 outline-none focus:border-orange-500 text-gray-700">
-                    
                     <button onclick="submitOrder()" id="btn-submit" class="w-full bg-red-500 hover:bg-red-600 text-white py-4 rounded-xl font-black text-xl shadow-lg transition-colors">🚀 確認送出訂單</button>
                 </div>
             </div>
@@ -171,22 +157,22 @@
             return true;
         }
 
-        // --- 菜單資料庫 (省略部分重複內容以節省長度，功能均保持最新) ---
-        const meats_toast = [{n:"煎蛋",p:30},{n:"肉鬆",p:35},{n:"火腿",p:35},{n:"培根",p:35},{n:"起士",p:35},{n:"薯餅",p:40},{n:"肉排",p:40},{n:"鮪魚",p:40},{n:"香雞排",p:45},{n:"里肌豬排",p:45},{n:"鮮蝦",p:45},{n:"燻雞",p:45},{n:"藍帶豬排",p:60},{n:"雞柳",p:60},{n:"明太鱈魚",p:65},{n:"菲力雞排",p:65},{n:"卡拉雞腿(辣味)",p:65}];
-        const meats_burger = [{n:"煎蛋",p:35},{n:"肉鬆",p:40},{n:"火腿",p:40},{n:"培根",p:40},{n:"起士",p:40},{n:"薯餅",p:45},{n:"肉排",p:45},{n:"鮪魚",p:45},{n:"香雞排",p:50},{n:"里肌豬排",p:50},{n:"鮮蝦",p:50},{n:"燻雞",p:50},{n:"藍帶豬排",p:65},{n:"雞柳",p:65},{n:"明太鱈魚",p:70},{n:"菲力雞排",p:70},{n:"卡拉雞腿(辣味)",p:70}];
-        const meats_baguette = [{n:"煎蛋",p:50},{n:"肉鬆",p:55},{n:"火腿",p:55},{n:"培根",p:55},{n:"起士",p:55},{n:"薯餅",p:60},{n:"肉排",p:60},{n:"鮪魚",p:60},{n:"香雞排",p:65},{n:"里肌豬排",p:65},{n:"鮮蝦",p:65},{n:"燻雞",p:65},{n:"藍帶豬排",p:80},{n:"明太鱈魚",p:85},{n:"菲力雞排",p:85},{n:"卡拉雞腿(辣味)",p:85}];
-        const meats_club = [{n:"肉排",p:60},{n:"鮪魚",p:65},{n:"香雞排",p:65},{n:"里肌豬排",p:65},{n:"鮮蝦",p:65},{n:"菲力雞排",p:85}];
-        const omelets = [{n:"原味",p:30},{n:"玉米",p:35},{n:"九層塔",p:35},{n:"起士",p:35},{n:"肉鬆",p:35},{n:"火腿",p:35},{n:"培根",p:35},{n:"熱狗",p:35},{n:"高麗菜",p:35},{n:"鮪魚",p:40},{n:"肉排",p:40},{n:"香雞排",p:45},{n:"里肌豬排",p:45},{n:"鮮蝦",p:45},{n:"燻雞",p:45},{n:"高麗菜培根",p:50},{n:"雞柳",p:65},{n:"明太鱈魚",p:70}];
+        // --- 菜單資料庫 (已優化部分品項名稱) ---
+        const meats_toast = [{n:"煎蛋",p:30},{n:"肉鬆蛋吐司",p:35},{n:"火腿蛋吐司",p:35},{n:"培根蛋吐司",p:35},{n:"起士蛋吐司",p:35},{n:"薯餅蛋吐司",p:40},{n:"肉排蛋吐司",p:40},{n:"鮪魚蛋吐司",p:40},{n:"香雞排蛋吐司",p:45},{n:"里肌豬排蛋吐司",p:45},{n:"鮮蝦蛋吐司",p:45},{n:"燻雞蛋吐司",p:45},{n:"藍帶豬排蛋吐司",p:60},{n:"雞柳蛋吐司",p:60},{n:"明太鱈魚蛋吐司",p:65},{n:"菲力雞排蛋吐司",p:65},{n:"卡拉雞腿蛋吐司(辣味)",p:65}];
+        const meats_burger = [{n:"煎蛋漢堡",p:35},{n:"肉鬆蛋漢堡",p:40},{n:"火腿蛋漢堡",p:40},{n:"培根蛋漢堡",p:40},{n:"起士蛋漢堡",p:40},{n:"薯餅蛋漢堡",p:45},{n:"肉排蛋漢堡",p:45},{n:"鮪魚蛋漢堡",p:45},{n:"香雞排蛋漢堡",p:50},{n:"里肌豬排蛋漢堡",p:50},{n:"鮮蝦蛋漢堡",p:50},{n:"燻雞蛋漢堡",p:50},{n:"藍帶豬排蛋漢堡",p:65},{n:"雞柳蛋漢堡",p:65},{n:"明太鱈魚蛋漢堡",p:70},{n:"菲力雞排蛋漢堡",p:70},{n:"卡拉雞腿蛋漢堡(辣味)",p:70}];
+        const meats_baguette = [{n:"煎蛋軟法",p:50},{n:"肉鬆軟法",p:55},{n:"火腿軟法",p:55},{n:"培根軟法",p:55},{n:"起士軟法",p:55},{n:"薯餅軟法",p:60},{n:"肉排軟法",p:60},{n:"鮪魚軟法",p:60},{n:"香雞排軟法",p:65},{n:"里肌豬排軟法",p:65},{n:"鮮蝦軟法",p:65},{n:"燻雞軟法",p:65},{n:"藍帶豬排軟法",p:80},{n:"明太鱈魚軟法",p:85},{n:"菲力雞排軟法",p:85},{n:"卡拉雞腿軟法(辣味)",p:85}];
+        const meats_club = [{n:"肉排總匯",p:60},{n:"鮪魚總匯",p:65},{n:"香雞排總匯",p:65},{n:"里肌豬排總匯",p:65},{n:"鮮蝦總匯",p:65},{n:"菲力雞排總匯",p:85}];
+        const omelets = [{n:"原味蛋餅",p:30},{n:"玉米蛋餅",p:35},{n:"九層塔蛋餅",p:35},{n:"起士蛋餅",p:35},{n:"肉鬆蛋餅",p:35},{n:"火腿蛋餅",p:35},{n:"培根蛋餅",p:35},{n:"熱狗蛋餅",p:35},{n:"高麗菜蛋餅",p:35},{n:"鮪魚蛋餅",p:40},{n:"肉排蛋餅",p:40},{n:"香雞排蛋餅",p:45},{n:"里肌豬排蛋餅",p:45},{n:"鮮蝦蛋餅",p:45},{n:"燻雞蛋餅",p:45},{n:"高麗菜培根蛋餅",p:50},{n:"雞柳蛋餅",p:65},{n:"明太鱈魚蛋餅",p:70}];
         const jams = ["奶油", "花生", "草莓", "巧克力", "椰香", "奶酥", "藍莓", "香蒜"];
         const drinks = [{n:"紅茶", m:15, l:20}, {n:"奶茶", m:20, l:25}, {n:"豆漿", m:20}, {n:"無糖豆漿", m:20}, {n:"黑芝麻", m:30}, {n:"杏仁漿", m:30}, {n:"燕麥薏仁", m:30}, {n:"鴛鴦", m:25, l:30}, {n:"鮮奶茶", m:30, l:35}, {n:"特調咖啡", m:25, l:30}, {n:"香濃可可", m:30}, {n:"美式咖啡", m:40, l:50}, {n:"鮮奶咖啡", m:50, l:60}, {n:"柳橙汁", m:25, l:30, iceOnly:true}, {n:"檸檬紅茶", m:25, l:30, iceOnly:true}, {n:"瓶裝牛奶", m:30}];
 
         const menuData = [
-            { id: "toast", cat: "吐司", type: "toast", items: meats_toast.map(m => ({ n: m.n === "煎蛋" ? "煎蛋吐司" : m.n+"蛋吐司", p: m.p })) },
-            { id: "burger", cat: "漢堡", type: "burger", items: meats_burger.map(m => ({ n: m.n === "煎蛋" ? "煎蛋漢堡" : m.n+"蛋漢堡", p: m.p })) },
-            { id: "baguette", cat: "軟法", type: "bread_no_egg", items: meats_baguette.map(m => ({ n: m.n+"軟法", p: m.p })) },
-            { id: "club", cat: "總匯", type: "bread_no_egg", items: meats_club.map(m => ({ n: m.n+"總匯", p: m.p })) },
+            { id: "toast", cat: "吐司", type: "toast", items: meats_toast },
+            { id: "burger", cat: "漢堡", type: "burger", items: meats_burger },
+            { id: "baguette", cat: "軟法", type: "bread_no_egg", items: meats_baguette },
+            { id: "club", cat: "總匯", type: "bread_no_egg", items: meats_club },
             { id: "noodle", cat: "鐵板麵", type: "noodle", items: [{n:"蘑菇鐵板麵+蛋", p:55}, {n:"黑胡椒鐵板麵+蛋", p:55}, {n:"奶油培根鐵板麵+蛋", p:60}, {n:"義式肉醬鐵板麵+蛋", p:60}, {n:"宮保雞丁鐵板麵+蛋", p:65}, {n:"青醬蟹肉鐵板麵+蛋", p:75}] },
-            { id: "omelet", cat: "蛋餅", type: "omelet", items: omelets.map(m => ({ n: m.n+"蛋餅", p: m.p })) },
+            { id: "omelet", cat: "蛋餅", type: "omelet", items: omelets },
             { id: "combo", cat: "套餐", type: "combo", items: [{n:"1號餐(麵+豬排+蛋+中杯紅茶)", p:85}, {n:"2號餐(蘿蔔糕+煎餃+蛋餅+中杯紅茶)", p:70}, {n:"3號餐(沙拉吐司+火腿熱狗+蛋+中杯紅茶)", p:65}, {n:"兒童餐(巧克力吐司+雞塊+薯條+熱狗+中杯紅茶)", p:60}] },
             { id: "jam", cat: "果醬吐司", type: "jam", items: [...jams.map(f => ({ n: f+"吐司", p: 15 })), { n: "雙色果醬厚片", p: 30, isTwo: true }] },
             { id: "flatbread", cat: "乳酪餅", type: "flatbread", items: [...jams.map(f => ({ n: f+"乳酪餅", p: 35 })), ...[{n:"煎蛋",p:40},{n:"火腿",p:45},{n:"肉鬆",p:45},{n:"培根",p:45},{n:"鮪魚",p:50},{n:"里肌豬排",p:55},{n:"燻雞",p:55}].map(m => ({ n: m.n+"乳酪餅+蛋", p: m.p }))] },
@@ -199,18 +185,9 @@
         let userMethod = "外帶"; let userTable = ""; let userTime = "";
         let editingIndex = -1;
 
-        function generateTimeSlots(bufferMins = 15) {
-            const now = new Date(); now.setMinutes(now.getMinutes() + bufferMins);
-            let m = Math.ceil(now.getMinutes() / 5) * 5; now.setMinutes(m);
-            const slots = [];
-            const end = new Date(); const [h, mi] = LAST_ORDER.split(':'); end.setHours(h, mi, 0);
-            while (now <= end) { slots.push(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`); now.setMinutes(now.getMinutes() + 5); }
-            return slots;
-        }
-
         function init() {
             if (!checkStoreStatus()) return;
-            const slots = generateTimeSlots();
+            const slots = generateTimeSlots(15);
             document.getElementById('setup-time').innerHTML = slots.map(t => `<option value="${t}">${t}</option>`).join('');
             document.getElementById('welcome-modal').classList.remove('hidden');
             document.getElementById('welcome-modal').classList.add('flex');
@@ -218,10 +195,8 @@
             const menuBox = document.getElementById('menu-box');
             menuData.forEach((sec, idx) => {
                 const btn = document.createElement('button');
-                btn.id = `nav-${sec.id}`; 
-                btn.className = `nav-btn px-5 py-3 text-sm text-gray-500 font-bold rounded-xl bg-white border border-gray-100 shadow-sm ${idx === 0 ? 'active' : ''}`;
-                btn.innerText = sec.cat; 
-                btn.onclick = () => document.getElementById(`sec-${sec.id}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
+                btn.id = `nav-${sec.id}`; btn.className = `nav-btn px-5 py-3 text-sm text-gray-500 font-bold rounded-xl bg-white border border-gray-100 shadow-sm ${idx === 0 ? 'active' : ''}`;
+                btn.innerText = sec.cat; btn.onclick = () => document.getElementById(`sec-${sec.id}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
                 nav.appendChild(btn);
                 const secDiv = document.createElement('section'); secDiv.id = `sec-${sec.id}`; secDiv.className = "pt-3 scroll-mt-24";
                 secDiv.innerHTML = `<h2 class="text-xl font-black mb-4 border-l-4 border-orange-500 pl-3 text-gray-800">${sec.cat}</h2>`;
@@ -281,7 +256,7 @@
             if (type === 'omelet') dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">醬料選擇</p><div class="flex gap-2">${radio('sauce', '醬油膏', '醬油膏', true)}${radio('sauce', '辣椒醬油', '辣椒醬油', false)}${radio('sauce', '不加醬', '不加醬', false)}</div>`;
             if (type === 'chinese') {
                 dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">醬料選擇</p><div class="flex flex-wrap gap-2 mb-3">${radio('sauce', '醬油膏', '醬油膏', true)}${radio('sauce', '辣椒醬油', '辣椒醬油', false)}${radio('sauce', '不加醬', '不加醬', false)}</div><div class="flex gap-2 mb-3">${check('condiments','加胡椒粉','加胡椒粉')}</div>`;
-                if (item.n === '荷包蛋') dyn.innerHTML += eggDoneness; else if (item.n === '蔥抓餅' || item.n === '煎餃' || item.n === '蘿蔔糕') dyn.innerHTML += `<div class="mt-4 flex gap-2">${check('addons', '加蛋', '加蛋', 15)}</div><div id="egg-wrapper-hidden" style="display:none;">${eggDoneness}</div>`;
+                if (item.n === '荷包蛋') dyn.innerHTML += eggDoneness; else if (item.n === '蔥抓餅' || item.n === '煎餃' || item.n.includes('蘿蔔糕')) dyn.innerHTML += `<div class="mt-4 flex gap-2">${check('addons', '加蛋', '加蛋', 15)}</div><div id="egg-wrapper-hidden" style="display:none;">${eggDoneness}</div>`;
             }
             if (type === 'snack') dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">調味選擇</p><div class="flex gap-2">${check('condiments','加胡椒粉','加胡椒粉')}${check('condiments','加番茄醬','加番茄醬')}</div>`;
             if (type === 'jam') {
@@ -400,23 +375,15 @@
             const cDiv = document.getElementById('history-items'); if(myOrders.length === 0) { cDiv.innerHTML = '<div class="text-center text-gray-400 mt-10 font-bold">目前無紀錄喔！</div>'; return; }
             let html = ''; myOrders.forEach(order => {
                 let itemsHtml = order.items.map(i => `<div class="text-sm text-gray-700 mt-1 flex justify-between border-b border-dashed pb-1"><span>${i.n}</span> <span class="text-gray-400 text-xs">${i.d ? '('+i.d+')' : ''}</span></div>`).join('');
-                let fullTime = order.orderTime || '';
-                let datePart = fullTime.split(' ')[0] || '';
-                let timePart = fullTime.split(' ')[1] || '';
+                let fullTime = order.orderTime || ''; let datePart = fullTime.split(' ')[0] || ''; let timePart = fullTime.split(' ')[1] || '';
                 html += `
                 <div class="bg-white p-4 rounded-xl border shadow-sm relative overflow-hidden">
                     <div class="flex justify-between items-start border-b pb-3 mb-3">
                         <div>
-                            <div class="flex items-center gap-2 mb-1">
-                                <span class="bg-red-500 text-white font-black px-2 py-0.5 rounded text-sm">#${order.orderNo}</span>
-                                <span class="font-black text-gray-800 text-base">${order.method}</span>
-                            </div>
+                            <div class="flex items-center gap-2 mb-1"><span class="bg-red-500 text-white font-black px-2 py-0.5 rounded text-sm">#${order.orderNo}</span><span class="font-black text-gray-800 text-base">${order.method}</span></div>
                             <div class="text-[11px] text-gray-500 font-bold tracking-tighter">下單日期：${datePart} <br> 下單時間：${timePart}</div>
                         </div>
-                        <div class="text-right">
-                            <div class="text-orange-600 font-black text-base italic leading-tight">🕒 取餐時間</div>
-                            <div class="text-orange-600 font-black text-2xl">${order.time}</div>
-                        </div>
+                        <div class="text-right"><div class="text-orange-600 font-black text-base italic leading-tight">🕒 取餐時間</div><div class="text-orange-600 font-black text-2xl">${order.time}</div></div>
                     </div>
                     <div class="space-y-1 mb-4">${itemsHtml}</div>
                     <div class="text-right font-black text-orange-600 text-xl border-t pt-2"><span class="text-xs text-gray-400 font-normal mr-1">總計</span>$${order.total}</div>
@@ -425,37 +392,61 @@
             cDiv.innerHTML = html;
         }
 
+        function generateTimeSlots(bufferMins = 15) {
+            const now = new Date(); now.setMinutes(now.getMinutes() + bufferMins);
+            let m = Math.ceil(now.getMinutes() / 5) * 5; now.setMinutes(m);
+            const slots = [];
+            const end = new Date(); const [h, mi] = LAST_ORDER.split(':'); end.setHours(h, mi, 0);
+            while (now <= end) { slots.push(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`); now.setMinutes(now.getMinutes() + 5); }
+            return slots;
+        }
+
+        // === 送出訂單：流水號號碼牌核心邏輯 ===
         function submitOrder() {
             const name = document.getElementById('order-name').value;
             const phone = document.getElementById('order-phone').value;
-            
             if (!name) return alert("請輸入您的稱呼，方便我們為您備餐喔！");
-            
-            // 🚨 修正：手機號碼彈性驗證 (8~11碼)
-            if (!phone || phone.length < 8 || phone.length > 11) {
-                return alert("請輸入正確的聯絡電話喔！\n(長度需介於 8 到 11 碼之間)");
-            }
-            
+            if (!phone || phone.length < 8 || phone.length > 11) return alert("請輸入正確的聯絡電話 (8~11碼) 喔！");
             if (cart.length === 0) return alert("購物車目前是空的喔！");
-            
+
             document.getElementById('btn-submit').innerText = '傳送中...';
-            const slots = generateTimeSlots(15); 
-            let finalTime = (userTime === slots[0] || userTime > slots[0]) ? userTime : slots[0];
-            const orderNo = String(Math.floor(Math.random() * 900) + 100);
-            const orderTimeStr = new Date().toLocaleString('zh-TW', { hour12: false });
             
-            database.ref('orders').push({ 
-                orderNo, customer: name, phone, method: userMethod, 
-                table: userMethod === '內用' ? userTable : "", pickupTime: finalTime, 
-                items: cart, total: parseInt(document.getElementById('cart-total').innerText), 
-                time: orderTimeStr, status: "新訂單" 
-            }).then(() => {
-                let myOrders = JSON.parse(localStorage.getItem('meitian_history') || '[]');
-                myOrders.unshift({ orderNo, method: userMethod, time: finalTime, orderTime: orderTimeStr, total: parseInt(document.getElementById('cart-total').innerText), items: cart });
-                if(myOrders.length > 15) myOrders.pop(); 
-                localStorage.setItem('meitian_history', JSON.stringify(myOrders));
-                alert(`🎉 訂單已送出！\n號碼牌：#${orderNo}\n預計取餐：${finalTime}`); 
-                location.reload();
+            // 根據今天的日期領取流水號
+            const now = new Date();
+            const dateKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+            const counterRef = database.ref('counters/' + dateKey);
+
+            counterRef.transaction((currentValue) => {
+                return (currentValue || 0) + 1;
+            }, (error, committed, snapshot) => {
+                if (error) {
+                    alert("領取號碼失敗，請檢查網路連線。");
+                    document.getElementById('btn-submit').innerText = '🚀 確認送出訂單';
+                } else if (committed) {
+                    const count = snapshot.val();
+                    const orderNo = String(count).padStart(3, '0'); // 格式化為 001, 002...
+                    
+                    const slots = generateTimeSlots(15); 
+                    let finalTime = (userTime === slots[0] || userTime > slots[0]) ? userTime : slots[0];
+                    const orderTimeStr = now.toLocaleString('zh-TW', { hour12: false });
+                    const totalAmt = parseInt(document.getElementById('cart-total').innerText);
+
+                    const orderData = {
+                        orderNo, customer: name, phone, method: userMethod, 
+                        table: userMethod === '內用' ? userTable : "", pickupTime: finalTime, 
+                        items: cart, total: totalAmt, time: orderTimeStr, status: "新訂單"
+                    };
+
+                    database.ref('orders').push(orderData).then(() => {
+                        let myOrders = JSON.parse(localStorage.getItem('meitian_history') || '[]');
+                        myOrders.unshift({ orderNo, method: userMethod, time: finalTime, orderTime: orderTimeStr, total: totalAmt, items: cart });
+                        if(myOrders.length > 15) myOrders.pop();
+                        localStorage.setItem('meitian_history', JSON.stringify(myOrders));
+                        
+                        alert(`🎉 訂單已成功送出！\n\n您的號碼牌是：#${orderNo}\n預計取餐：${finalTime}`); 
+                        location.reload();
+                    });
+                }
             });
         }
         window.onload = init;
