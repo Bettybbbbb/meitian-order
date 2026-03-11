@@ -68,7 +68,7 @@
                 </div>
                 <div id="modal-dynamic-options" class="flex-1 overflow-y-auto p-5 space-y-6 bg-gray-50 scroll-smooth"></div>
                 <div class="p-4 border-t bg-white shrink-0 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
-                    <input type="text" id="modal-note" placeholder="備註 (如需要請填寫)" class="w-full border-2 p-3 rounded-xl focus:border-orange-500 outline-none mb-3 font-bold text-gray-600">
+                    <input type="text" id="modal-note" maxlength="20" placeholder="備註 (如需要請填寫，限20字)" class="w-full border-2 p-3 rounded-xl focus:border-orange-500 outline-none mb-3 font-bold text-gray-600">
                     <button onclick="addToCart()" class="w-full bg-orange-600 hover:bg-orange-700 text-white py-4 rounded-xl font-black text-lg shadow-lg">確認加入購物車</button>
                 </div>
             </div>
@@ -89,11 +89,10 @@
                     <div class="flex justify-between items-center mb-3">
                         <span class="text-gray-600 font-bold text-lg">總計金額</span><span class="text-4xl font-black text-red-600">$<span id="cart-total">0</span></span>
                     </div>
-                    <div class="flex gap-2 mb-2">
-                        <input type="text" id="order-table" placeholder="桌號(外帶免填)" class="w-1/3 border-2 p-3 rounded-xl text-center font-bold bg-gray-50 outline-none focus:border-orange-500">
-                        <input type="text" id="order-name" placeholder="您的稱呼(必填)" class="w-2/3 border-2 p-3 rounded-xl font-bold bg-gray-50 outline-none focus:border-orange-500">
-                    </div>
+                    
+                    <input type="text" id="order-name" placeholder="您的稱呼(必填)" class="w-full border-2 p-3 rounded-xl mb-2 font-bold bg-gray-50 outline-none focus:border-orange-500">
                     <input type="tel" id="order-phone" placeholder="您的聯絡電話(必填)" class="w-full border-2 p-3 rounded-xl mb-4 font-bold bg-gray-50 outline-none focus:border-orange-500">
+                    
                     <button onclick="submitOrder()" id="btn-submit" class="w-full bg-red-500 hover:bg-red-600 text-white py-4 rounded-xl font-black text-xl shadow-lg transition-colors">🚀 確認送出訂單</button>
                 </div>
             </div>
@@ -242,7 +241,6 @@
             const check = (grp, val, label, price=0) => `<label class="flex-1 cursor-pointer"><input type="checkbox" name="${grp}" value="${val}|${price}" class="hidden opt-checkbox" onchange="calcPrice()"><div class="border-2 p-3 rounded-xl text-center font-bold text-gray-600 transition-colors">${label} ${price!=0 ? '+'+price : ''}</div></label>`;
             const eggDoneness = `<div id="egg-wrapper" class="mt-4"><p class="text-sm font-bold text-orange-600 mb-2">蛋的熟度</p><div class="flex gap-2">${radio('egg_done', '全熟', '全熟', true)}${radio('egg_done', '半熟', '半熟', false)}</div></div>`;
             
-            // 冰塊溫度拿掉 (無少冰) 字樣
             const drinkTemp = (iceOnly=false) => `<p class="text-sm font-bold text-gray-500 mb-2 mt-5">冰塊與溫度</p><div class="grid grid-cols-4 gap-2">${radio('d_temp', '冰', '冰', true)}${radio('d_temp', '去冰', '去冰', false)}${iceOnly?'':radio('d_temp', '溫', '溫', false)+radio('d_temp', '熱', '熱', false)}</div>`;
             
             if (type !== 'drink' && type !== 'combo' && type !== 'snack') dyn.innerHTML += `<div class="mb-5 flex gap-2">${check('addons', '加起司', '加起司', 10)}</div>`;
@@ -265,7 +263,6 @@
                 dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">醬料選擇</p><div class="flex flex-wrap gap-2 mb-3">${radio('sauce', '醬油', '醬油', true)}${radio('sauce', '辣椒醬油', '辣椒醬油', false)}${radio('sauce', '不加醬', '不加醬', false)}</div><div class="flex gap-2 mb-3">${check('condiments','加胡椒粉','加胡椒粉')}</div>`;
                 if (item.n === '荷包蛋') dyn.innerHTML += eggDoneness;
                 else if (item.n === '蔥抓餅' || item.n === '煎餃' || item.n === '蘿蔔糕') dyn.innerHTML += `<div class="mt-4 flex gap-2">${check('addons', '加蛋', '加蛋', 15)}</div><div id="egg-wrapper-hidden" style="display:none;">${eggDoneness}</div>`;
-                // 九層塔蛋, 玉米蛋, 辣炒蘿蔔糕塔香蛋 不顯示熟度
             }
 
             if (type === 'snack') dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">調味選擇</p><div class="flex gap-2">${check('condiments','加胡椒粉','加胡椒粉')}${check('condiments','加番茄醬','加番茄醬')}</div>`;
@@ -293,11 +290,12 @@
                 if(item.n.includes('2號餐')) dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">蛋餅醬料</p><div class="flex gap-2 mb-5">${radio('sauce', '醬油膏', '醬油膏', true)}${radio('sauce', '辣椒醬油', '辣椒醬油', false)}${radio('sauce', '不加醬', '不加醬', false)}</div>`;
                 
                 if(item.n.includes('1號餐') || item.n.includes('3號餐')) dyn.innerHTML += eggDoneness;
+                // 新增兒童餐備註的 maxlength="20"
+                if(item.n.includes('兒童餐')) dyn.innerHTML += `<p class="font-bold text-orange-500 mb-2">果醬吐司口味備註</p><input type="text" id="combo-jam-note" maxlength="20" placeholder="如：草莓薄片 (限20字)" class="w-full border-2 p-3 rounded-xl mb-4 focus:border-orange-500 outline-none">`;
 
                 let dOpts = '';
                 drinks.forEach(d => {
                     if (d.n === '紅茶') { 
-                        // 原配拿掉
                         dOpts += `<option value="${d.n}(中)|0">${d.n}(中) +0元</option>`; 
                         if(d.l) dOpts += `<option value="${d.n}(大)|${d.l - 10}">${d.n}(大) +${d.l - 10}元</option>`; 
                     } else { 
@@ -359,6 +357,7 @@
 
             let comboDrink = document.getElementById('combo-drink'); if (comboDrink) details.push(`飲:${comboDrink.value.split('|')[0]}`);
             let jam1 = document.getElementById('jam1'); let jam2 = document.getElementById('jam2'); if (jam1 && jam2) details.push(`(${jam1.value}+${jam2.value})`);
+            let comboJamNote = document.getElementById('combo-jam-note'); if (comboJamNote && comboJamNote.value) details.push(`果醬:${comboJamNote.value}`);
             let note = document.getElementById('modal-note').value; if (note) details.push(`備:${note}`);
             
             cart.push({ n: n, p: p, d: details.join(' / ') });
@@ -429,6 +428,7 @@
         function submitOrder() {
             const name = document.getElementById('order-name').value;
             const phone = document.getElementById('order-phone').value;
+            
             if (!name) return alert("老闆/老闆娘好，結帳前請讓客人輸入稱呼唷！");
             if (!phone) return alert("麻煩輸入您的手機號碼，方便我們為您備餐聯繫喔！");
             if (cart.length === 0) return alert("購物車目前是空的喔！");
