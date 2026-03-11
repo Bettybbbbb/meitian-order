@@ -66,7 +66,7 @@
                     <div><h2 id="modal-title" class="text-xl font-bold text-gray-800">餐點名稱</h2><p class="text-orange-600 font-black text-xl" id="modal-price-display">$0</p></div>
                     <button onclick="closeModal()" class="bg-gray-100 text-gray-600 w-8 h-8 rounded-full font-bold text-lg">✕</button>
                 </div>
-                <div id="modal-dynamic-options" class="flex-1 overflow-y-auto p-5 space-y-6 bg-gray-50"></div>
+                <div id="modal-dynamic-options" class="flex-1 overflow-y-auto p-5 space-y-6 bg-gray-50 scroll-smooth"></div>
                 <div class="p-4 border-t bg-white shrink-0 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
                     <input type="text" id="modal-note" placeholder="備註 (如需要請填寫)" class="w-full border-2 p-3 rounded-xl focus:border-orange-500 outline-none mb-3 font-bold text-gray-600">
                     <button onclick="addToCart()" class="w-full bg-orange-600 hover:bg-orange-700 text-white py-4 rounded-xl font-black text-lg shadow-lg">確認加入購物車</button>
@@ -241,7 +241,9 @@
             const radio = (grp, val, label, checked, price=0) => `<label class="flex-1 cursor-pointer"><input type="radio" name="${grp}" value="${val}|${price}" ${checked?'checked':''} class="hidden opt-radio" onchange="calcPrice()"><div class="border-2 p-3 rounded-xl text-center font-bold text-gray-600 transition-colors">${label} ${price!=0 ? (price>0?'+'+price:price) : ''}</div></label>`;
             const check = (grp, val, label, price=0) => `<label class="flex-1 cursor-pointer"><input type="checkbox" name="${grp}" value="${val}|${price}" class="hidden opt-checkbox" onchange="calcPrice()"><div class="border-2 p-3 rounded-xl text-center font-bold text-gray-600 transition-colors">${label} ${price!=0 ? '+'+price : ''}</div></label>`;
             const eggDoneness = `<div id="egg-wrapper" class="mt-4"><p class="text-sm font-bold text-orange-600 mb-2">蛋的熟度</p><div class="flex gap-2">${radio('egg_done', '全熟', '全熟', true)}${radio('egg_done', '半熟', '半熟', false)}</div></div>`;
-            const drinkTemp = (iceOnly=false) => `<p class="text-sm font-bold text-gray-500 mb-2 mt-5">冰塊與溫度 (無少冰)</p><div class="grid grid-cols-4 gap-2">${radio('d_temp', '冰', '冰', true)}${radio('d_temp', '去冰', '去冰', false)}${iceOnly?'':radio('d_temp', '溫', '溫', false)+radio('d_temp', '熱', '熱', false)}</div>`;
+            
+            // 冰塊溫度拿掉 (無少冰) 字樣
+            const drinkTemp = (iceOnly=false) => `<p class="text-sm font-bold text-gray-500 mb-2 mt-5">冰塊與溫度</p><div class="grid grid-cols-4 gap-2">${radio('d_temp', '冰', '冰', true)}${radio('d_temp', '去冰', '去冰', false)}${iceOnly?'':radio('d_temp', '溫', '溫', false)+radio('d_temp', '熱', '熱', false)}</div>`;
             
             if (type !== 'drink' && type !== 'combo' && type !== 'snack') dyn.innerHTML += `<div class="mb-5 flex gap-2">${check('addons', '加起司', '加起司', 10)}</div>`;
 
@@ -263,7 +265,7 @@
                 dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">醬料選擇</p><div class="flex flex-wrap gap-2 mb-3">${radio('sauce', '醬油', '醬油', true)}${radio('sauce', '辣椒醬油', '辣椒醬油', false)}${radio('sauce', '不加醬', '不加醬', false)}</div><div class="flex gap-2 mb-3">${check('condiments','加胡椒粉','加胡椒粉')}</div>`;
                 if (item.n === '荷包蛋') dyn.innerHTML += eggDoneness;
                 else if (item.n === '蔥抓餅' || item.n === '煎餃' || item.n === '蘿蔔糕') dyn.innerHTML += `<div class="mt-4 flex gap-2">${check('addons', '加蛋', '加蛋', 15)}</div><div id="egg-wrapper-hidden" style="display:none;">${eggDoneness}</div>`;
-                // 九層塔蛋, 玉米蛋, 辣炒蘿蔔糕塔香蛋 不加蛋也不選熟度
+                // 九層塔蛋, 玉米蛋, 辣炒蘿蔔糕塔香蛋 不顯示熟度
             }
 
             if (type === 'snack') dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">調味選擇</p><div class="flex gap-2">${check('condiments','加胡椒粉','加胡椒粉')}${check('condiments','加番茄醬','加番茄醬')}</div>`;
@@ -295,7 +297,8 @@
                 let dOpts = '';
                 drinks.forEach(d => {
                     if (d.n === '紅茶') { 
-                        dOpts += `<option value="${d.n}(中)|0">${d.n}(中) 原配 +0元</option>`; 
+                        // 原配拿掉
+                        dOpts += `<option value="${d.n}(中)|0">${d.n}(中) +0元</option>`; 
                         if(d.l) dOpts += `<option value="${d.n}(大)|${d.l - 10}">${d.n}(大) +${d.l - 10}元</option>`; 
                     } else { 
                         let diffM = d.m - 10; dOpts += `<option value="${d.n}(中)|${diffM}">${d.n}(中) +${diffM}元</option>`; 
@@ -311,6 +314,9 @@
             });
 
             document.getElementById('option-modal').classList.remove('hidden'); document.getElementById('option-modal').classList.add('flex');
+            
+            dyn.scrollTop = 0; 
+            
             setTimeout(calcPrice, 10);
         }
 
