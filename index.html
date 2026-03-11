@@ -5,8 +5,7 @@
     
     const FORCE_CLOSE = false;         // 🚨 想立刻關店休息？將 false 改成 true
     
-    const HOLIDAYS = [];               // 🏖️ 特殊公休日 (填入日期，中間用逗號隔開)
-                                       // 範例格式： ["2026-03-20", "2026-03-21"]
+    const HOLIDAYS = [];               // 🏖️ 特殊公休日 (格式： ["2026-03-15"])
     
     const CLOSED_DAYS = [0];           // 🗓️ 每週固定公休 (0 是週日, 6 是週六)
     
@@ -28,36 +27,13 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .nav-btn { 
-            transition: all 0.2s; 
-            border-bottom: 4px solid transparent; 
-            min-width: 90px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .nav-btn.active { 
-            border-bottom: 4px solid #ea580c; 
-            color: #ea580c; 
-            font-weight: 900; 
-            background-color: #fff7ed;
-        }
+        .nav-btn { transition: all 0.2s; border-bottom: 4px solid transparent; min-width: 90px; display: flex; align-items: center; justify-content: center; }
+        .nav-btn.active { border-bottom: 4px solid #ea580c; color: #ea580c; font-weight: 900; background-color: #fff7ed; }
         .modal-enter { animation: slideUp 0.3s ease-out forwards; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        /* 修正按鈕字體顏色：確保未選中是灰色，選中是亮橘色 */
-        .opt-radio + div { color: #4b5563; } /* 預設深灰 */
-        .opt-radio:checked + div { 
-            background-color: #fff7ed; 
-            border-color: #ea580c; 
-            color: #ea580c !important; 
-            font-weight: bold; 
-        }
-        .opt-checkbox:checked + div { 
-            background-color: #fff7ed; 
-            border-color: #ea580c; 
-            color: #ea580c !important; 
-            font-weight: bold; 
-        }
+        .opt-radio + div { color: #4b5563; }
+        .opt-radio:checked + div { background-color: #fff7ed; border-color: #ea580c; color: #ea580c !important; font-weight: bold; }
+        .opt-checkbox:checked + div { background-color: #fff7ed; border-color: #ea580c; color: #ea580c !important; font-weight: bold; }
     </style>
 </head>
 <body class="bg-gray-50 flex justify-center h-screen overflow-hidden text-gray-800 font-sans">
@@ -67,12 +43,10 @@
             <div class="flex justify-between items-center">
                 <div class="flex-1 mr-2">
                     <h1 class="text-2xl font-black italic tracking-wider">美天早餐</h1>
-                    <div class="text-[11px] text-orange-100 font-medium mt-1 opacity-90">
-                        新北市土城區延吉街53號 | 02-22703918
-                    </div>
+                    <div class="text-[11px] text-orange-100 font-medium mt-1 opacity-90">新北市土城區延吉街53號 | 02-22703918</div>
                 </div>
-                <div class="flex gap-2 items-center">
-                    <button onclick="toggleHistory()" class="bg-orange-700/50 text-white px-3 py-2 rounded-full font-bold text-sm border border-orange-400/30">📄 紀錄</button>
+                <div class="flex gap-2 items-center text-white">
+                    <button onclick="toggleHistory()" class="bg-orange-700/50 px-3 py-2 rounded-full font-bold text-sm border border-orange-400/30">📄 紀錄</button>
                     <button onclick="toggleCart()" class="bg-white text-orange-600 px-3 py-2 rounded-full font-black shadow-md flex items-center gap-2">
                         🛒 <span id="cart-count" class="bg-red-500 text-white px-2 py-0.5 rounded-full text-xs">0</span>
                     </button>
@@ -85,7 +59,7 @@
 
         <div id="closed-overlay" class="fixed inset-0 bg-black/90 z-[100] hidden flex-col items-center justify-center p-6 text-center text-white">
             <div class="text-6xl mb-4">🌙</div>
-            <h2 class="text-3xl font-black mb-1">店面休息中</h2>
+            <h2 class="text-3xl font-black text-white mb-1">店面休息中</h2>
             <p class="text-orange-400 text-xl font-black mb-4 italic underline decoration-2">每週日公休</p>
             <p id="store-hours-text" class="text-gray-300 font-bold mb-6"></p>
             <p class="text-orange-500 font-bold border-2 border-orange-500 p-3 rounded-xl">期待在營業時間為您服務！</p>
@@ -102,14 +76,14 @@
                 <input type="text" id="setup-table" inputmode="numeric" pattern="[0-9]*" maxlength="2" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 2);" placeholder="請輸入桌號" class="w-full border-2 p-3 rounded-xl mb-6 hidden focus:border-orange-500 outline-none font-bold bg-orange-50 text-xl text-center text-gray-700">
                 <p class="font-bold text-gray-600 mb-2 text-sm">2. 預計取餐/入座時間 (需15分備餐)</p>
                 <select id="setup-time" class="w-full border-2 p-3 rounded-xl font-bold bg-gray-50 mb-6 outline-none text-lg text-gray-700"></select>
-                <button onclick="startOrdering()" class="w-full bg-orange-600 text-white py-4 rounded-xl font-black text-xl shadow-lg">開始點餐 🚀</button>
+                <button onclick="startOrdering()" class="w-full bg-orange-600 text-white py-4 rounded-xl font-black text-xl shadow-lg transition-colors">開始點餐 🚀</button>
             </div>
         </div>
 
         <div id="option-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-end text-gray-800">
             <div class="bg-white rounded-t-3xl w-full max-w-md mx-auto h-[85vh] flex flex-col modal-enter shadow-2xl">
                 <div class="p-4 border-b flex justify-between items-center bg-white rounded-t-3xl shrink-0 shadow-sm">
-                    <div><h2 id="modal-title" class="text-xl font-bold">餐點名稱</h2><p class="text-orange-600 font-black text-xl" id="modal-price-display">$0</p></div>
+                    <div><h2 id="modal-title" class="text-xl font-bold text-gray-800">餐點名稱</h2><p class="text-orange-600 font-black text-xl" id="modal-price-display">$0</p></div>
                     <button onclick="closeModal()" class="bg-gray-100 text-gray-600 w-8 h-8 rounded-full font-bold text-lg">✕</button>
                 </div>
                 <div id="modal-dynamic-options" class="flex-1 overflow-y-auto p-5 space-y-6 bg-gray-50 scroll-smooth"></div>
@@ -137,7 +111,7 @@
                     </div>
                     <input type="text" id="order-name" placeholder="您的稱呼 (必填)" class="w-full border-2 p-3 rounded-xl mb-2 font-bold bg-gray-50 outline-none focus:border-orange-500">
                     <input type="text" id="order-phone" inputmode="numeric" pattern="[0-9]*" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);" placeholder="聯絡電話 (8~10位數字)" class="w-full border-2 p-3 rounded-xl mb-4 font-bold bg-gray-50 outline-none focus:border-orange-500">
-                    <button onclick="submitOrder()" id="btn-submit" class="w-full bg-red-500 text-white py-4 rounded-xl font-black text-xl shadow-lg">🚀 確認送出訂單</button>
+                    <button onclick="submitOrder()" id="btn-submit" class="w-full bg-red-500 text-white py-4 rounded-xl font-black text-xl shadow-lg transition-colors">🚀 確認送出訂單</button>
                 </div>
             </div>
         </div>
@@ -154,12 +128,7 @@
     </div>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyBg6_9BpcXndrwKL0l1jcp5kYdk8qza-4Q",
-            databaseURL: "https://test-7c0ce-default-rtdb.firebaseio.com",
-            projectId: "test-7c0ce",
-            appId: "1:125105855985:web:f4dbef66a2b7df788ff850"
-        };
+        const firebaseConfig = { apiKey: "AIzaSyBg6_9BpcXndrwKL0l1jcp5kYdk8qza-4Q", databaseURL: "https://test-7c0ce-default-rtdb.firebaseio.com", projectId: "test-7c0ce", appId: "1:125105855985:web:f4dbef66a2b7df788ff850" };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
@@ -180,14 +149,13 @@
             return true;
         }
 
-        // --- 修正後的菜單名稱：保證顯示吐司與漢堡 ---
         const list_toast = [{n:"煎蛋吐司",p:30},{n:"肉鬆蛋吐司",p:35},{n:"火腿蛋吐司",p:35},{n:"培根蛋吐司",p:35},{n:"起士蛋吐司",p:35},{n:"薯餅蛋吐司",p:40},{n:"肉排蛋吐司",p:40},{n:"鮪魚蛋吐司",p:40},{n:"香雞排蛋吐司",p:45},{n:"里肌豬排蛋吐司",p:45},{n:"鮮蝦蛋吐司",p:45},{n:"燻雞蛋吐司",p:45},{n:"藍帶豬排蛋吐司",p:60},{n:"雞柳蛋吐司",p:60},{n:"明太鱈魚蛋吐司",p:65},{n:"菲力雞排蛋吐司",p:65},{n:"卡拉雞腿蛋吐司(辣味)",p:65}];
         const list_burger = [{n:"煎蛋漢堡",p:35},{n:"肉鬆蛋漢堡",p:40},{n:"火腿蛋漢堡",p:40},{n:"培根蛋漢堡",p:40},{n:"起士蛋漢堡",p:40},{n:"薯餅蛋漢堡",p:45},{n:"肉排蛋漢堡",p:45},{n:"鮪魚蛋漢堡",p:45},{n:"香雞排蛋漢堡",p:50},{n:"里肌豬排蛋漢堡",p:50},{n:"鮮蝦蛋漢堡",p:50},{n:"燻雞蛋漢堡",p:50},{n:"藍帶豬排蛋漢堡",p:65},{n:"雞柳蛋漢堡",p:65},{n:"明太鱈魚蛋漢堡",p:70},{n:"菲力雞排蛋漢堡",p:70},{n:"卡拉雞腿蛋漢堡(辣味)",p:70}];
         const list_baguette = [{n:"煎蛋軟法",p:50},{n:"肉鬆軟法",p:55},{n:"火腿軟法",p:55},{n:"培根軟法",p:55},{n:"起士軟法",p:55},{n:"薯餅軟法",p:60},{n:"肉排軟法",p:60},{n:"鮪魚軟法",p:60},{n:"香雞排軟法",p:65},{n:"里肌豬排軟法",p:65},{n:"鮮蝦軟法",p:65},{n:"燻雞軟法",p:65},{n:"藍帶豬排軟法",p:80},{n:"明太鱈魚軟法",p:85},{n:"菲力雞排軟法",p:85},{n:"卡拉雞腿軟法(辣味)",p:85}];
         const list_club = [{n:"肉排總匯",p:60},{n:"鮪魚總匯",p:65},{n:"香雞排總匯",p:65},{n:"里肌豬排總匯",p:65},{n:"鮮蝦總匯",p:65},{n:"菲力雞排總匯",p:85}];
         const list_omelet = [{n:"原味蛋餅",p:30},{n:"玉米蛋餅",p:35},{n:"九層塔蛋餅",p:35},{n:"起士蛋餅",p:35},{n:"肉鬆蛋餅",p:35},{n:"火腿蛋餅",p:35},{n:"培根蛋餅",p:35},{n:"熱狗蛋餅",p:35},{n:"高麗菜蛋餅",p:35},{n:"鮪魚蛋餅",p:40},{n:"肉排蛋餅",p:40},{n:"香雞排蛋餅",p:45},{n:"里肌豬排蛋餅",p:45},{n:"鮮蝦蛋餅",p:45},{n:"燻雞蛋餅",p:45},{n:"高麗菜培根蛋餅",p:50},{n:"雞柳蛋餅",p:65},{n:"明太鱈魚蛋餅",p:70}];
         const list_jam = ["奶油", "花生", "草莓", "巧克力", "椰香", "奶酥", "藍莓", "香蒜"];
-        const list_drinks = [{n:"紅茶", m:15, l:20}, {n:"奶茶", m:20, l:25}, {n:"豆漿", m:20}, {n:"無糖豆漿", m:20}, {n:"黑芝麻", m:30}, {n:"杏仁漿", m:30}, {n:"燕麥薏仁", m:30}, {n:"鴛鴦", m:25, l:30}, {n:"鮮奶茶", m:30, l:35}, {n:"特調咖啡", m:25, l:30}, {n:"香濃可可", m:30}, {n:"美式咖啡", m:40, l:50}, {n:"鮮奶咖啡", m:50, l:60}, {n:"柳橙汁", m:25, l:30, iceOnly:true}, {n:"檸檬紅茶", m:25, l:30, iceOnly:true}, {n:"瓶裝牛奶", m:30}];
+        const list_drinks = [{n:"紅茶", m:15, l:20}, {n:"奶茶", m:20, l:25}, {n:"豆漿", m:20}, {n:"無糖豆漿", m:20}, {n:"黑芝麻", m:30}, {n:"杏仁漿", m:30}, {n:"燕麥薏仁", m:30}, {n:"鴛鴦", m:25, l:30}, {n:"鮮奶茶", m:30, l:35}, {n:"特調咖啡", m:25, l:30}, {n:"香濃可可", m:30}, {n:"美式咖啡", m:40, l:50}, {n:"鮮奶咖啡", m:50, l:60}, {n:"柳橙汁", m:25, l:30, iceOnly:true}, {n:"檸檬紅茶", m:25, l:30, iceOnly:true}, {n:"瓶裝牛奶", m:30, bottle:true}];
 
         const menuData = [
             { id: "toast", cat: "吐司", type: "toast", items: list_toast },
@@ -198,15 +166,13 @@
             { id: "omelet", cat: "蛋餅", type: "omelet", items: list_omelet },
             { id: "combo", cat: "套餐", type: "combo", items: [{n:"1號餐(麵+豬排+蛋+中杯紅茶)", p:85}, {n:"2號餐(蘿蔔糕+煎餃+蛋餅+中杯紅茶)", p:70}, {n:"3號餐(沙拉吐司+火腿熱狗+蛋+中杯紅茶)", p:65}, {n:"兒童餐(巧克力吐司+雞塊+薯條+熱狗+中杯紅茶)", p:60}] },
             { id: "jam", cat: "果醬吐司", type: "jam", items: [...list_jam.map(f => ({ n: f+"吐司", p: 15 })), { n: "雙色果醬厚片", p: 30, isTwo: true }] },
-            { id: "flatbread", cat: "乳酪餅", type: "flatbread", items: [...list_jam.map(f => ({ n: f+"乳酪餅", p: 35 })), ...[{n:"煎蛋",p:40},{n:"火腿",p:45},{n:"肉鬆",p:45},{n:"培根",p:45},{n:"鮪魚",p:50},{n:"里肌豬排",p:55},{n:"燻雞",p:55}].map(m => ({ n: m.n+"乳酪餅+蛋", p: m.p }))] },
+            { id: "flatbread", cat: "乳酪餅", type: "flatbread", items: [...list_jam.map(f => ({ n: f+"乳酪餅", p: 35, sweet:true })), ...[{n:"煎蛋乳酪餅+蛋",p:40},{n:"火腿乳酪餅+蛋",p:45},{n:"肉鬆乳酪餅+蛋",p:45},{n:"培根乳酪餅+蛋",p:45},{n:"鮪魚乳酪餅+蛋",p:50},{n:"里肌豬排乳酪餅+蛋",p:55},{n:"燻雞乳酪餅+蛋",p:55}].map(m => ({ n: m.n, p: m.p, savory:true }))] },
             { id: "snack", cat: "小點", type: "snack", items: [{n:"培根", p:15}, {n:"火腿", p:15}, {n:"熱狗(4條)", p:20}, {n:"薯餅", p:20}, {n:"薯條", p:30}, {n:"里肌肉排", p:30}, {n:"小雞球", p:35}, {n:"麥克雞塊(5塊)", p:40}, {n:"檸檬雞柳條(3條)", p:45}, {n:"薯餅塔(黃芥末醬)", p:45}, {n:"法式吐司(蜂蜜)", p:45}, {n:"德式香腸(2條)", p:50}, {n:"生菜沙拉", p:50}, {n:"菲力雞排", p:50}, {n:"卡拉雞腿(辣味)", p:50}, {n:"藍帶豬排", p:50}] },
             { id: "chinese", cat: "中式輕食", type: "chinese", items: [{n:"荷包蛋", p:15}, {n:"九層塔蛋", p:20}, {n:"玉米蛋", p:25}, {n:"蔥抓餅", p:30}, {n:"煎餃", p:35}, {n:"蘿蔔糕", p:35}, {n:"辣炒蘿蔔糕塔香蛋", p:60}] },
-            { id: "drink", cat: "飲料", type: "drink", items: list_drinks.map(d => ({ n: d.n, pm: d.m, pl: d.l, iceOnly: d.iceOnly })) }
+            { id: "drink", cat: "飲料", type: "drink", items: list_drinks.map(d => ({ n: d.n, pm: d.m, pl: d.l, iceOnly: d.iceOnly, bottle: d.bottle })) }
         ];
 
-        let cart = []; let curItem = null; let basePrice = 0;
-        let userMethod = "外帶"; let userTable = ""; let userTime = "";
-        let editingIndex = -1;
+        let cart = []; let curItem = null; let basePrice = 0; let userMethod = "外帶"; let userTable = ""; let userTime = ""; let editingIndex = -1;
 
         function init() {
             if (!checkStoreStatus()) return;
@@ -214,11 +180,9 @@
             document.getElementById('setup-time').innerHTML = slots.map(t => `<option value="${t}">${t}</option>`).join('');
             document.getElementById('welcome-modal').classList.remove('hidden');
             document.getElementById('welcome-modal').classList.add('flex');
-            const nav = document.getElementById('nav-bar');
-            const menuBox = document.getElementById('menu-box');
+            const nav = document.getElementById('nav-bar'); const menuBox = document.getElementById('menu-box');
             menuData.forEach((sec, idx) => {
-                const btn = document.createElement('button');
-                btn.id = `nav-${sec.id}`; btn.className = `nav-btn px-5 py-3 text-sm text-gray-500 font-bold rounded-xl bg-white border border-gray-100 shadow-sm ${idx === 0 ? 'active' : ''}`;
+                const btn = document.createElement('button'); btn.id = `nav-${sec.id}`; btn.className = `nav-btn px-5 py-3 text-sm text-gray-500 font-bold rounded-xl bg-white border border-gray-100 shadow-sm ${idx === 0 ? 'active' : ''}`;
                 btn.innerText = sec.cat; btn.onclick = () => document.getElementById(`sec-${sec.id}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
                 nav.appendChild(btn);
                 const secDiv = document.createElement('section'); secDiv.id = `sec-${sec.id}`; secDiv.className = "pt-3 scroll-mt-24";
@@ -226,34 +190,14 @@
                 const grid = document.createElement('div'); grid.className = "grid grid-cols-1 gap-3";
                 sec.items.forEach(item => {
                     let pText = sec.type === 'drink' ? (item.pl ? `$${item.pm} / $${item.pl}` : `$${item.pm}`) : `$${item.p}`;
-                    grid.innerHTML += `<div onclick='openModal(${JSON.stringify(item)}, "${sec.type}")' class="bg-white p-4 rounded-2xl shadow-sm border flex justify-between items-center active:scale-95 transition-transform cursor-pointer"><span class="font-bold text-gray-700 text-lg">${item.n}</span><span class="text-orange-600 font-black">${pText} <span class="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full ml-1 font-bold">+</span></span></div>`;
+                    grid.innerHTML += `<div onclick='openModal(${JSON.stringify(item)}, "${sec.type}")' class="bg-white p-4 rounded-2xl shadow-sm border flex justify-between items-center active:scale-95 transition-transform cursor-pointer"><span class="font-bold text-gray-700 text-lg text-gray-700">${item.n}</span><span class="text-orange-600 font-black">${pText} <span class="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full ml-1 font-bold">+</span></span></div>`;
                 });
                 secDiv.appendChild(grid); menuBox.appendChild(secDiv);
             });
             const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-                        const actBtn = document.getElementById(entry.target.id.replace('sec-', 'nav-'));
-                        if (actBtn) { actBtn.classList.add('active'); actBtn.scrollIntoView({ inline: 'center', behavior: 'smooth', block:'nearest' }); }
-                    }
-                });
+                entries.forEach(entry => { if (entry.isIntersecting) { document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); const actBtn = document.getElementById(entry.target.id.replace('sec-', 'nav-')); if (actBtn) { actBtn.classList.add('active'); actBtn.scrollIntoView({ inline: 'center', behavior: 'smooth', block:'nearest' }); } } });
             }, { rootMargin: '-20% 0px -70% 0px' });
             document.querySelectorAll('section').forEach(sec => observer.observe(sec));
-        }
-
-        function toggleTableInput() {
-            const method = document.querySelector('input[name="order_method"]:checked').value;
-            const tbInput = document.getElementById('setup-table');
-            if (method === '內用') { tbInput.classList.remove('hidden'); tbInput.focus(); } else { tbInput.classList.add('hidden'); }
-        }
-
-        function startOrdering() {
-            userMethod = document.querySelector('input[name="order_method"]:checked').value;
-            userTable = document.getElementById('setup-table').value;
-            userTime = document.getElementById('setup-time').value;
-            if (userMethod === '內用' && !userTable) return alert('請輸入桌號喔！');
-            document.getElementById('welcome-modal').classList.add('hidden');
         }
 
         function openModal(item, type) {
@@ -265,48 +209,38 @@
             const check = (grp, val, label, price=0) => `<label class="flex-1 cursor-pointer"><input type="checkbox" name="${grp}" value="${val}|${price}" class="hidden opt-checkbox" onchange="calcPrice()"><div class="border-2 p-3 rounded-xl text-center font-bold transition-colors">${label} ${price!=0 ? '+'+price : ''}</div></label>`;
             const eggDoneness = `<div id="egg-wrapper" class="mt-4"><p class="text-sm font-bold text-orange-600 mb-2">蛋的熟度</p><div class="flex gap-2">${radio('egg_done', '全熟', '全熟', true)}${radio('egg_done', '半熟', '半熟', false)}</div></div>`;
             const drinkTemp = (iceOnly=false) => `<p class="text-sm font-bold text-gray-500 mb-2 mt-5">冰塊與溫度</p><div class="grid grid-cols-4 gap-2">${radio('d_temp', '冰', '冰', true)}${radio('d_temp', '去冰', '去冰', false)}${iceOnly?'':radio('d_temp', '溫', '溫', false)+radio('d_temp', '熱', '熱', false)}</div>`;
+            
             if (type !== 'drink' && type !== 'combo' && type !== 'snack') dyn.innerHTML += `<div class="mb-5 flex gap-2">${check('addons', '加起司', '加起司', 10)}</div>`;
-            if (type === 'burger' || type === 'toast' || type === 'noodle') {
-                dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">蛋的選擇</p><div class="flex gap-2">${radio('has_egg', '正常含蛋', '正常含蛋', true, 0)}${radio('has_egg', '不加蛋', '不加蛋', false, -5)}</div>${eggDoneness}`;
-                let excludes = type === 'toast' ? ['沙拉','小黃瓜','胡椒粉'] : (type === 'burger' ? ['沙拉','生菜','洋蔥','番茄片','番茄醬','胡椒粉'] : []);
+            
+            if (['toast', 'burger', 'bread_no_egg', 'flatbread'].includes(type)) {
+                if (item.sweet || type === 'bread_no_egg') {
+                    dyn.innerHTML += `<div class="mt-4 flex gap-2">${check('addons', '加蛋', '加蛋', 15)}</div>`;
+                } else if (item.savory) { // 🛡️ 鹹乳酪餅邏輯：預設含蛋，不加蛋減5元
+                    dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">蛋的選擇</p><div class="flex gap-2">${radio('has_egg', '正常含蛋', '正常含蛋', true, 0)}${radio('has_egg', '不加蛋', '不加蛋', false, -5)}</div>`;
+                }
+                let excludes = ['toast'].includes(type) ? ['沙拉','小黃瓜','胡椒粉'] : (['burger','bread_no_egg'].includes(type) ? ['沙拉','生菜','洋蔥','番茄片','番茄醬','胡椒粉'] : []);
                 if (excludes.length > 0) dyn.innerHTML += `<p class="font-bold text-red-500 mb-2 mt-5">⚠️ 挑食專區 (不吃請打勾)</p><div class="grid grid-cols-3 gap-2">${excludes.map(e => check('excludes', '去'+e, '去'+e)).join('')}</div>`;
                 if (type === 'toast') dyn.innerHTML += `<div class="mt-5 flex gap-2">${check('addons', '加生菜', '加生菜', 5)}</div>`;
-            }
-            if (type === 'bread_no_egg') {
-                dyn.innerHTML += `<p class="font-bold text-red-500 mb-2">⚠️ 挑食專區 (不吃請打勾)</p><div class="grid grid-cols-3 gap-2">${['沙拉','生菜','洋蔥','番茄片','番茄醬','胡椒粉'].map(e => check('excludes', '去'+e, '去'+e)).join('')}</div>`;
-                dyn.innerHTML += `<div class="mt-5 flex gap-2">${check('addons', '加蛋', '加蛋', 15)}</div><div id="egg-wrapper-hidden" style="display:none;">${eggDoneness}</div>`;
-            }
-            if (type === 'omelet') dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">醬料選擇</p><div class="flex gap-2">${radio('sauce', '醬油膏', '醬油膏', true)}${radio('sauce', '辣椒醬油', '辣椒醬油', false)}${radio('sauce', '不加醬', '不加醬', false)}</div>`;
-            if (type === 'chinese') {
+            } else if (type === 'noodle') {
+                dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">蛋的選擇</p><div class="flex gap-2">${radio('has_egg', '正常含蛋', '正常含蛋', true, 0)}${radio('has_egg', '不加蛋', '不加蛋', false, -5)}</div>${eggDoneness}`;
+            } else if (type === 'omelet') {
+                dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">醬料選擇</p><div class="flex gap-2">${radio('sauce', '醬油膏', '醬油膏', true)}${radio('sauce', '辣椒醬油', '辣椒醬油', false)}${radio('sauce', '不加醬', '不加醬', false)}</div>`;
+            } else if (type === 'chinese') {
                 dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">醬料選擇</p><div class="flex flex-wrap gap-2 mb-3">${radio('sauce', '醬油膏', '醬油膏', true)}${radio('sauce', '辣椒醬油', '辣椒醬油', false)}${radio('sauce', '不加醬', '不加醬', false)}</div><div class="flex gap-2 mb-3">${check('condiments','加胡椒粉','加胡椒粉')}</div>`;
-                if (item.n.includes('荷包蛋')) dyn.innerHTML += eggDoneness; else if (item.n === '蔥抓餅' || item.n === '煎餃' || item.n === '蘿蔔糕') dyn.innerHTML += `<div class="mt-4 flex gap-2">${check('addons', '加蛋', '加蛋', 15)}</div><div id="egg-wrapper-hidden" style="display:none;">${eggDoneness}</div>`;
-            }
-            if (type === 'snack') dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">調味選擇</p><div class="flex gap-2">${check('condiments','加胡椒粉','加胡椒粉')}${check('condiments','加番茄醬','加番茄醬')}</div>`;
-            if (type === 'jam') {
-                if (!item.isTwo) dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">厚度選擇</p><div class="flex gap-2">${radio('j_thick', '薄片', '薄片', true, 0)}${radio('j_thick', '厚片', '厚片', false, 10)}</div>`;
-                else {
-                    let jOpts = list_jam.map(j => `<option value="${j}">${j}</option>`).join('');
-                    dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">選2種口味</p><div class="flex gap-2"><select id="jam1" class="flex-1 border-2 p-3 rounded-xl font-bold bg-white">${jOpts}</select><select id="jam2" class="flex-1 border-2 p-3 rounded-xl font-bold bg-white">${jOpts.replace('巧克力', '巧克力" selected"')}</select></div>`;
-                }
-                dyn.innerHTML += `<div class="mt-5 flex gap-2">${check('addons', '加厚果醬', '加厚果醬', 5)}</div>`;
-            }
-            if (type === 'flatbread') dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">蛋的選擇</p><div class="flex gap-2">${radio('has_egg', '正常含蛋', '正常含蛋', true, 0)}${radio('has_egg', '不加蛋', '不加蛋', false, -5)}</div>${eggDoneness}`;
-            if (type === 'drink') {
+                if (item.n.includes('荷包蛋')) dyn.innerHTML += eggDoneness; else if (['蔥抓餅','煎餃','蘿蔔糕'].some(x => item.n.includes(x))) dyn.innerHTML += `<div class="mt-4 flex gap-2">${check('addons', '加蛋', '加蛋', 15)}</div><div id="egg-wrapper-hidden" style="display:none;">${eggDoneness}</div>`;
+            } else if (type === 'drink') {
                 if(item.pl) dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">大小杯</p><div class="flex gap-2">${radio('d_size', '中杯', '中杯', true, 0)}${radio('d_size', '大杯', '大杯', false, item.pl - item.pm)}</div>`;
-                if(item.n.includes('瓶裝牛奶')) dyn.innerHTML += `<div class="mt-4 flex gap-2">${check('addons', '換杯', '換杯', 5)}</div>`;
-                dyn.innerHTML += drinkTemp(item.iceOnly);
-            }
-            if (type === 'combo') {
+                if (!item.bottle) dyn.innerHTML += drinkTemp(item.iceOnly);
+            } else if (type === 'combo') {
                 if(item.n.includes('1號餐')) dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">鐵板麵口味 (必選)</p><div class="flex gap-2 mb-5">${radio('n_flavor', '蘑菇', '蘑菇', true)}${radio('n_flavor', '黑胡椒', '黑胡椒', false)}</div>`;
                 if(item.n.includes('2號餐')) dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">蛋餅醬料</p><div class="flex gap-2 mb-5">${radio('sauce', '醬油膏', '醬油膏', true)}${radio('sauce', '辣椒醬油', '辣椒醬油', false)}${radio('sauce', '不加醬', '不加醬', false)}</div>`;
-                if(item.n.includes('1號餐') || item.n.includes('3號餐')) dyn.innerHTML += eggDoneness;
-                if(item.n.includes('兒童餐')) dyn.innerHTML += `<p class="font-bold text-orange-500 mb-2">巧克力吐司備註</p><input type="text" id="combo-jam-note" maxlength="20" placeholder="例如：去邊 / 切邊" class="w-full border-2 p-3 rounded-xl mb-4 focus:border-orange-500 outline-none text-gray-700">`;
                 let dOpts = ''; list_drinks.forEach(d => {
                     if (d.n === '紅茶') { dOpts += `<option value="${d.n}(中)|0">${d.n}(中) +0元</option>`; if(d.l) dOpts += `<option value="${d.n}(大)|${d.l - 10}">${d.n}(大) +${d.l - 10}元</option>`; }
                     else { let diffM = d.m - 10; dOpts += `<option value="${d.n}(中)|${diffM}">${d.n}(中) +${diffM}元</option>`; if(d.l) { let diffL = d.l - 10; dOpts += `<option value="${d.n}(大)|${diffL}">${d.n}(大) +${diffL}元</option>`; } }
                 });
                 dyn.innerHTML += `<p class="font-bold text-orange-600 mb-2 mt-5">✦ 飲料換購 (折抵10元)</p><select id="combo-drink" class="w-full border-2 p-3 rounded-xl font-bold bg-orange-50 text-orange-800 outline-none" onchange="calcPrice()">${dOpts}</select>${drinkTemp()}`;
             }
+
             dyn.addEventListener('change', (e) => {
                 if (e.target.name === 'has_egg') { let wrapper = document.getElementById('egg-wrapper'); if(wrapper) wrapper.style.display = e.target.value.includes('正常') ? 'block' : 'none'; }
                 if (e.target.name === 'addons' && e.target.value.includes('加蛋')) { let wrapper = document.getElementById('egg-wrapper-hidden'); if(wrapper) wrapper.style.display = e.target.checked ? 'block' : 'none'; }
@@ -315,48 +249,20 @@
             dyn.scrollTop = 0; setTimeout(calcPrice, 10);
         }
 
-        function editCart(idx) {
-            let itemToEdit = cart[idx]; toggleCart(); openModal(itemToEdit.baseItem, itemToEdit.type);
-            editingIndex = idx; document.getElementById('add-to-cart-btn').innerText = "💾 儲存修改";
-            setTimeout(() => {
-                let raw = itemToEdit.raw; if(!raw) return;
-                for(let key in raw.radios) { let r = document.querySelector(`input[name="${key}"][value="${raw.radios[key]}"]`); if(r) r.checked = true; }
-                raw.checks.forEach(val => { let c = document.querySelector(`input[type="checkbox"][value="${val}"]`); if(c) c.checked = true; });
-                for(let key in raw.selects) { let s = document.getElementById(key); if(s) s.value = raw.selects[key]; }
-                if(document.getElementById('combo-jam-note')) document.getElementById('combo-jam-note').value = raw.comboJamNote || '';
-                document.getElementById('modal-note').value = itemToEdit.note || '';
-                document.querySelectorAll('#modal-dynamic-options input:checked').forEach(el => { el.dispatchEvent(new Event('change', { bubbles: true })); });
-                calcPrice();
-            }, 50);
-        }
-
-        function closeModal() { document.getElementById('option-modal').classList.add('hidden'); }
-
-        function calcPrice() {
-            let total = basePrice;
-            document.querySelectorAll('#modal-dynamic-options input[type="radio"]:checked').forEach(r => total += parseInt(r.value.split('|')[1]||0));
-            document.querySelectorAll('#modal-dynamic-options input[type="checkbox"]:checked').forEach(c => total += parseInt(c.value.split('|')[1]||0));
-            let comboDrink = document.getElementById('combo-drink'); if (comboDrink) total += parseInt(comboDrink.value.split('|')[1]||0);
-            document.getElementById('modal-price-display').innerText = '$' + total;
-        }
-
         function addToCart() {
             let p = parseInt(document.getElementById('modal-price-display').innerText.replace('$',''));
-            let n = curItem.n; let details = [];
-            let rawState = { radios: {}, checks: [], selects: {}, comboJamNote: '' };
+            let n = curItem.n; let details = []; let rawState = { radios: {}, checks: [], selects: {}, comboJamNote: '' };
             document.querySelectorAll('#modal-dynamic-options input[type="radio"]:checked').forEach(r => {
                 let val = r.value.split('|')[0]; rawState.radios[r.name] = r.value;
                 if(!['正常含蛋', '薄片', '中杯'].includes(val)) {
                     if (r.name === 'egg_done') {
                         let hasEgg = document.querySelector('input[name="has_egg"]:checked'); let addEgg = document.querySelector('input[name="addons"][value^="加蛋"]:checked');
-                        if ((hasEgg && hasEgg.value.includes('正常')) || addEgg || n.includes('荷包蛋') || (curItem.type === 'combo' && (n.includes('1號餐') || n.includes('3號餐')))) details.push(`${val}`);
+                        if (curItem.type === 'noodle' || (hasEgg && hasEgg.value.includes('正常')) || addEgg || n.includes('荷包蛋')) details.push(`${val}`);
                     } else if (r.name === 'n_flavor' && curItem.type === 'combo') { details.push(`${val}口味`); } else { details.push(val); }
                 }
             });
             document.querySelectorAll('#modal-dynamic-options input[type="checkbox"]:checked').forEach(c => { rawState.checks.push(c.value); details.push(c.value.split('|')[0]); });
             if (document.getElementById('combo-drink')) { rawState.selects['combo-drink'] = document.getElementById('combo-drink').value; details.push(`飲:${document.getElementById('combo-drink').value.split('|')[0]}`); }
-            if (document.getElementById('jam1') && document.getElementById('jam2')) { rawState.selects['jam1'] = document.getElementById('jam1').value; rawState.selects['jam2'] = document.getElementById('jam2').value; details.push(`(${document.getElementById('jam1').value}+${document.getElementById('jam2').value})`); }
-            if (document.getElementById('combo-jam-note') && document.getElementById('combo-jam-note').value) { rawState.comboJamNote = document.getElementById('combo-jam-note').value; details.push(`備:${document.getElementById('combo-jam-note').value}`); }
             let note = document.getElementById('modal-note').value; if (note) details.push(`備:${note}`);
             let cartItemObj = { n, p, d: details.join(' / '), baseItem: curItem, type: curItem.type, raw: rawState, note };
             if (editingIndex > -1) cart[editingIndex] = cartItemObj; else cart.push(cartItemObj);
@@ -364,128 +270,45 @@
             if (editingIndex > -1) { setTimeout(toggleCart, 150); } else { const cBtn = document.getElementById('cart-count'); cBtn.classList.add('scale-150'); setTimeout(() => cBtn.classList.remove('scale-150'), 300); }
         }
 
-        function updateCart() {
-            document.getElementById('cart-count').innerText = cart.length;
-            const cDiv = document.getElementById('cart-items'); cDiv.innerHTML = ''; let t = 0;
-            cart.forEach((i, idx) => {
-                t += i.p; let redText = i.d.replace(/不加蛋|去[^\s\/]+|不加醬/g, m => `<span class="text-red-500 font-bold">${m}</span>`);
-                cDiv.innerHTML += `<div class="bg-white p-3 rounded-xl border flex justify-between items-center shadow-sm"><div><div class="font-bold text-gray-800">${i.n}</div><div class="text-xs text-gray-500 mt-1 leading-snug">${redText}</div></div><div class="flex items-center gap-2"><span class="font-black text-orange-600 mr-1">$${i.p}</span><button onclick="editCart(${idx})" class="text-blue-500 font-bold text-sm bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-lg">修改</button><button onclick="removeCart(${idx})" class="text-red-400 font-bold text-sm bg-red-50 border border-red-100 px-3 py-1.5 rounded-lg">刪除</button></div></div>`;
-            });
-            document.getElementById('cart-total').innerText = t;
-        }
-
-        function removeCart(idx) { cart.splice(idx, 1); updateCart(); }
-
-        function toggleCart() {
-            const d = document.getElementById('cart-drawer');
-            if (d.classList.contains('hidden')) {
-                const slots = generateTimeSlots(15);
-                if (!(userTime === slots[0] || userTime > slots[0])) { alert(`為確保現做品質，取餐時間已為您自動順延至最快的 ${slots[0]}。`); userTime = slots[0]; }
-                document.getElementById('display-method').innerText = userMethod;
-                document.getElementById('display-table').innerText = userMethod === '內用' ? `(桌號: ${userTable})` : '';
-                document.getElementById('display-time').innerText = userTime;
-                d.classList.remove('hidden'); d.classList.add('flex');
-            } else { d.classList.add('hidden'); }
-        }
-
-        function toggleHistory() {
-            const d = document.getElementById('history-drawer');
-            if (d.classList.contains('hidden')) { renderHistory(); d.classList.remove('hidden'); d.classList.add('flex'); } else { d.classList.add('hidden'); }
-        }
-
-        function renderHistory() {
-            let myOrders = JSON.parse(localStorage.getItem('meitian_history') || '[]');
-            const cDiv = document.getElementById('history-items'); if(myOrders.length === 0) { cDiv.innerHTML = '<div class="text-center text-gray-400 mt-10 font-bold">目前無紀錄喔！</div>'; return; }
-            let html = ''; myOrders.forEach(order => {
-                let itemsHtml = order.items.map(i => `<div class="text-sm text-gray-700 mt-1 flex justify-between border-b border-dashed pb-1"><span>${i.n}</span> <span class="text-gray-400 text-xs">${i.d ? '('+i.d+')' : ''}</span></div>`).join('');
-                let fullTime = order.orderTime || '';
-                let datePart = fullTime.split(' ')[0] || '';
-                let timePart = fullTime.split(' ')[1] || '';
-                html += `
-                <div class="bg-white p-4 rounded-xl border shadow-sm relative overflow-hidden text-gray-700">
-                    <div class="flex justify-between items-start border-b pb-3 mb-3">
-                        <div>
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="bg-red-500 text-white font-black px-2 py-0.5 rounded text-sm">#${order.orderNo}</span>
-                                <span class="font-black text-gray-800 text-base">${order.method}</span>
-                            </div>
-                            <div class="text-[11px] text-gray-500 font-bold tracking-tighter">下單日期：${datePart} <br> 下單時間：${timePart}</div>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-orange-600 font-black text-base italic leading-tight">🕒 取餐時間</div>
-                            <div class="text-orange-600 font-black text-2xl">${order.time}</div>
-                        </div>
-                    </div>
-                    <div class="space-y-1 mb-4">${itemsHtml}</div>
-                    <div class="text-right font-black text-orange-600 text-xl border-t pt-2"><span class="text-xs text-gray-400 font-normal mr-1">總計</span>$${order.total}</div>
-                </div>`;
-            });
-            cDiv.innerHTML = html;
-        }
-
-        // --- 🚀 流水號核心邏輯：每日從 001 開始 ---
         function submitOrder() {
-            const name = document.getElementById('order-name').value;
-            const phone = document.getElementById('order-phone').value;
+            const name = document.getElementById('order-name').value; const phone = document.getElementById('order-phone').value;
             if (!name) return alert("請輸入您的稱呼喔！");
-            const phoneRegex = /^\d{8,10}$/; 
-            if (!phoneRegex.test(phone)) return alert("聯絡電話格式不對喔！\n請輸入 8 ~ 10 位數字。");
+            const phoneRegex = /^\d{8,10}$/; if (!phoneRegex.test(phone)) return alert("聯絡電話格式不對喔！\n請輸入 8 ~ 10 位數字。");
             if (cart.length === 0) return alert("購物車目前是空的喔！");
-
             document.getElementById('btn-submit').innerText = '傳送中...';
-            
-            const now = new Date();
-            const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+            const now = new Date(); const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
             const orderTimeStr = now.toLocaleString('zh-TW', { hour12: false });
-            const slots = generateTimeSlots(15);
-            let finalTime = (userTime === slots[0] || userTime > slots[0]) ? userTime : slots[0];
-
-            // 🛠️ Firebase 事務處理：根據日期獲取並增加流水號
-            database.ref('metadata/daily_counters/' + todayStr).transaction((currentValue) => {
-                return (currentValue || 0) + 1;
-            }, (error, committed, snapshot) => {
-                if (error) {
-                    alert("單號生成失敗，請重試！");
-                    document.getElementById('btn-submit').innerText = '🚀 確認送出訂單';
-                } else if (committed) {
-                    const count = snapshot.val();
-                    const orderNo = String(count).padStart(3, '0'); // 格式化為 001, 002...
-
-                    let orderData = { 
-                        orderNo, 
-                        customer: name, 
-                        phone, 
-                        method: userMethod, 
-                        table: userMethod === '內用' ? userTable : "", 
-                        pickupTime: finalTime, 
-                        items: cart, 
-                        total: parseInt(document.getElementById('cart-total').innerText), 
-                        time: orderTimeStr, 
-                        status: "新訂單" 
-                    };
-
+            database.ref('metadata/daily_counters/' + todayStr).transaction((v) => (v || 0) + 1, (err, comm, snap) => {
+                if (comm) {
+                    const orderNo = String(snap.val()).padStart(3, '0');
+                    let orderData = { orderNo, customer: name, phone, method: userMethod, table: userMethod === '內用' ? userTable : "", pickupTime: (userTime || generateTimeSlots(15)[0]), items: cart, total: parseInt(document.getElementById('cart-total').innerText), time: orderTimeStr, status: "新訂單" };
                     database.ref('orders').push(orderData).then(() => {
                         let myOrders = JSON.parse(localStorage.getItem('meitian_history') || '[]');
-                        myOrders.unshift({ orderNo, method: userMethod, time: finalTime, orderTime: orderTimeStr, total: orderData.total, items: cart });
-                        if(myOrders.length > 15) myOrders.pop();
-                        localStorage.setItem('meitian_history', JSON.stringify(myOrders));
-                        alert(`🎉 訂單已送出！\n您的號碼牌是：#${orderNo}\n預計取餐：${finalTime}`);
-                        location.reload();
+                        myOrders.unshift({ orderNo, method: userMethod, time: orderData.pickupTime, orderTime: orderTimeStr, total: orderData.total, items: cart });
+                        if(myOrders.length > 15) myOrders.pop(); localStorage.setItem('meitian_history', JSON.stringify(myOrders));
+                        alert(`🎉 訂單已送出！\n號碼牌：#${orderNo}\n預計取餐：${orderData.pickupTime}`); location.reload();
                     });
                 }
             });
         }
 
-        // 輔助函數：生成取餐時間選項
         function generateTimeSlots(bufferMins = 15) {
-            const now = new Date(); now.setMinutes(now.getMinutes() + bufferMins);
-            let m = Math.ceil(now.getMinutes() / 5) * 5; now.setMinutes(m);
-            const slots = [];
-            const end = new Date(); const [h, mi] = LAST_ORDER.split(':'); end.setHours(h, mi, 0);
+            const now = new Date(); now.setMinutes(now.getMinutes() + bufferMins); let m = Math.ceil(now.getMinutes() / 5) * 5; now.setMinutes(m);
+            const slots = []; const end = new Date(); const [h, mi] = LAST_ORDER.split(':'); end.setHours(h, mi, 0);
             while (now <= end) { slots.push(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`); now.setMinutes(now.getMinutes() + 5); }
             return slots;
         }
 
+        function editCart(idx) { let itemToEdit = cart[idx]; toggleCart(); openModal(itemToEdit.baseItem, itemToEdit.type); editingIndex = idx; document.getElementById('add-to-cart-btn').innerText = "💾 儲存修改"; setTimeout(() => { let raw = itemToEdit.raw; if(!raw) return; for(let key in raw.radios) { let r = document.querySelector(`input[name="${key}"][value="${raw.radios[key]}"]`); if(r) r.checked = true; } raw.checks.forEach(val => { let c = document.querySelector(`input[type="checkbox"][value="${val}"]`); if(c) c.checked = true; }); for(let key in raw.selects) { let s = document.getElementById(key); if(s) s.value = raw.selects[key]; } document.getElementById('modal-note').value = itemToEdit.note || ''; document.querySelectorAll('#modal-dynamic-options input:checked').forEach(el => { el.dispatchEvent(new Event('change', { bubbles: true })); }); calcPrice(); }, 50); }
+        function closeModal() { document.getElementById('option-modal').classList.add('hidden'); }
+        function calcPrice() { let total = basePrice; document.querySelectorAll('#modal-dynamic-options input[type="radio"]:checked').forEach(r => total += parseInt(r.value.split('|')[1]||0)); document.querySelectorAll('#modal-dynamic-options input[type="checkbox"]:checked').forEach(c => total += parseInt(c.value.split('|')[1]||0)); let comboDrink = document.getElementById('combo-drink'); if (comboDrink) total += parseInt(comboDrink.value.split('|')[1]||0); document.getElementById('modal-price-display').innerText = '$' + total; }
+        function toggleTableInput() { const method = document.querySelector('input[name="order_method"]:checked').value; const tbInput = document.getElementById('setup-table'); if (method === '內用') { tbInput.classList.remove('hidden'); tbInput.focus(); } else { tbInput.classList.add('hidden'); } }
+        function startOrdering() { userMethod = document.querySelector('input[name="order_method"]:checked').value; userTable = document.getElementById('setup-table').value; userTime = document.getElementById('setup-time').value; if (userMethod === '內用' && !userTable) return alert('請輸入桌號喔！'); document.getElementById('welcome-modal').classList.add('hidden'); }
+        function updateCart() { document.getElementById('cart-count').innerText = cart.length; const cDiv = document.getElementById('cart-items'); cDiv.innerHTML = ''; let t = 0; cart.forEach((i, idx) => { t += i.p; let redText = i.d.replace(/不加蛋|去[^\s\/]+|不加醬/g, m => `<span class="text-red-500 font-bold">${m}</span>`); cDiv.innerHTML += `<div class="bg-white p-3 rounded-xl border flex justify-between items-center shadow-sm"><div><div class="font-bold text-gray-800 text-gray-800">${i.n}</div><div class="text-xs text-gray-500 mt-1 leading-snug">${redText}</div></div><div class="flex items-center gap-2"><span class="font-black text-orange-600 mr-1">$${i.p}</span><button onclick="editCart(${idx})" class="text-blue-500 font-bold text-sm bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-lg">修改</button><button onclick="removeCart(${idx})" class="text-red-400 font-bold text-sm bg-red-50 border border-red-100 px-3 py-1.5 rounded-lg">刪除</button></div></div>`; }); document.getElementById('cart-total').innerText = t; }
+        function removeCart(idx) { cart.splice(idx, 1); updateCart(); }
+        function toggleCart() { const d = document.getElementById('cart-drawer'); if (d.classList.contains('hidden')) { const slots = generateTimeSlots(15); if (!(userTime === slots[0] || userTime > slots[0])) { alert(`為確保現做品質，取餐時間已為您自動順延至最快的 ${slots[0]}。`); userTime = slots[0]; } document.getElementById('display-method').innerText = userMethod; document.getElementById('display-table').innerText = userMethod === '內用' ? `(桌號: ${userTable})` : ''; document.getElementById('display-time').innerText = userTime; d.classList.remove('hidden'); d.classList.add('flex'); } else { d.classList.add('hidden'); } }
+        function toggleHistory() { const d = document.getElementById('history-drawer'); if (d.classList.contains('hidden')) { renderHistory(); d.classList.remove('hidden'); d.classList.add('flex'); } else { d.classList.add('hidden'); } }
+        function renderHistory() { let myOrders = JSON.parse(localStorage.getItem('meitian_history') || '[]'); const cDiv = document.getElementById('history-items'); if(myOrders.length === 0) { cDiv.innerHTML = '<div class="text-center text-gray-400 mt-10 font-bold">目前無紀錄喔！</div>'; return; } let html = ''; myOrders.forEach(order => { let itemsHtml = order.items.map(i => `<div class="text-sm text-gray-700 mt-1 flex justify-between border-b border-dashed pb-1"><span>${i.n}</span> <span class="text-gray-400 text-xs">${i.d ? '('+i.d+')' : ''}</span></div>`).join(''); let fullTime = order.orderTime || ''; let datePart = fullTime.split(' ')[0] || ''; let timePart = fullTime.split(' ')[1] || ''; html += `<div class="bg-white p-4 rounded-xl border shadow-sm relative overflow-hidden text-gray-700"><div class="flex justify-between items-start border-b pb-3 mb-3"><div><div class="flex items-center gap-2 mb-2"><span class="bg-red-500 text-white font-black px-2 py-0.5 rounded text-sm">#${order.orderNo}</span><span class="font-black text-gray-800 text-base">${order.method}</span></div><div class="text-[11px] text-gray-500 font-bold leading-relaxed">下單日期：${datePart} <br> 下單時間：${timePart}</div></div><div class="text-right"><div class="text-orange-600 font-black text-base italic leading-tight">🕒 取餐時間</div><div class="text-orange-600 font-black text-2xl">${order.time}</div></div></div><div class="space-y-1 mb-4">${itemsHtml}</div><div class="text-right font-black text-orange-600 text-xl border-t pt-2"><span class="text-xs text-gray-400 font-normal mr-1">總計</span>$${order.total}</div></div>`; }); cDiv.innerHTML = html; }
         window.onload = init;
     </script>
 </body>
