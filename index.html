@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>美天早餐 - 旗艦點餐系統</title>
+    <title>美天早餐 - 延吉店專屬點餐</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -13,95 +13,120 @@
         .nav-btn.active { border-bottom: 3px solid #ea580c; color: #ea580c; font-weight: 900; }
         .modal-enter { animation: slideUp 0.3s ease-out forwards; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        /* 隱藏原生 checkbox/radio，用自訂樣式 */
-        .opt-checkbox:checked + div { background-color: #fff7ed; border-color: #ea580c; color: #ea580c; font-weight: bold; }
-        .opt-radio:checked + div { background-color: #fff7ed; border-color: #ea580c; color: #ea580c; font-weight: bold; }
+        .opt-checkbox:checked + div, .opt-radio:checked + div { background-color: #fff7ed; border-color: #ea580c; color: #ea580c; font-weight: bold; }
     </style>
 </head>
 <body class="bg-gray-50 flex justify-center h-screen overflow-hidden text-gray-800 font-sans">
     <div class="w-full max-w-md bg-white h-full flex flex-col relative shadow-2xl">
         
         <header class="bg-orange-500 text-white p-4 shrink-0 shadow-md flex justify-between items-center z-20">
-            <div><h1 class="text-xl font-black italic">美天早餐</h1><p class="text-xs text-orange-100">延吉店專屬點餐</p></div>
-            <button onclick="toggleCart()" class="bg-white text-orange-600 px-4 py-2 rounded-full font-black shadow-lg">🛒 <span id="cart-count">0</span></button>
+            <div><h1 class="text-xl font-black italic">美天早餐</h1><p class="text-xs text-orange-100">新北市土城區延吉街53號</p></div>
+            <button onclick="toggleCart()" class="bg-white text-orange-600 px-4 py-2 rounded-full font-black shadow-lg flex items-center gap-2">
+                🛒 <span id="cart-count" class="bg-red-500 text-white px-2 py-0.5 rounded-full text-sm">0</span>
+            </button>
         </header>
 
-        <div id="nav-bar" class="flex overflow-x-auto p-2 bg-white gap-4 hide-scrollbar shrink-0 border-b sticky top-0 z-10 whitespace-nowrap shadow-sm"></div>
+        <div id="nav-bar" class="flex overflow-x-auto p-2 bg-white gap-3 hide-scrollbar shrink-0 border-b sticky top-0 z-10 whitespace-nowrap shadow-sm"></div>
 
         <div id="menu-box" class="flex-1 overflow-y-auto p-4 space-y-8 pb-32 scroll-smooth bg-gray-50"></div>
 
         <div id="option-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-end">
             <div class="bg-white rounded-t-3xl w-full max-w-md mx-auto h-[85vh] flex flex-col modal-enter shadow-2xl">
-                <div class="p-4 border-b flex justify-between items-center bg-white rounded-t-3xl shrink-0">
+                <div class="p-4 border-b flex justify-between items-center bg-white rounded-t-3xl shrink-0 shadow-sm">
                     <div>
                         <h2 id="modal-title" class="text-xl font-bold text-gray-800">餐點名稱</h2>
-                        <p class="text-orange-600 font-bold text-lg" id="modal-price-display">$0</p>
+                        <p class="text-orange-600 font-black text-xl" id="modal-price-display">$0</p>
                     </div>
-                    <button onclick="closeModal()" class="bg-gray-100 text-gray-600 w-8 h-8 rounded-full font-bold">✕</button>
+                    <button onclick="closeModal()" class="bg-gray-100 text-gray-600 w-8 h-8 rounded-full font-bold text-lg">✕</button>
                 </div>
                 
-                <div id="modal-dynamic-options" class="flex-1 overflow-y-auto p-5 space-y-6 bg-gray-50">
-                    </div>
+                <div id="modal-dynamic-options" class="flex-1 overflow-y-auto p-5 space-y-6 bg-gray-50"></div>
 
-                <div class="p-4 border-t bg-white shrink-0">
-                    <input type="text" id="modal-note" placeholder="其他備註 (非必填)" class="w-full border-2 p-3 rounded-xl focus:border-orange-500 outline-none mb-3">
-                    <button onclick="addToCart()" class="w-full bg-orange-600 text-white py-4 rounded-xl font-black text-lg shadow-lg">加入購物車</button>
+                <div class="p-4 border-t bg-white shrink-0 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
+                    <input type="text" id="modal-note" placeholder="備註 (如需要請填寫)" class="w-full border-2 p-3 rounded-xl focus:border-orange-500 outline-none mb-3 font-bold text-gray-600">
+                    <button onclick="addToCart()" class="w-full bg-orange-600 hover:bg-orange-700 text-white py-4 rounded-xl font-black text-lg shadow-lg transition-colors">確認加入購物車</button>
                 </div>
             </div>
         </div>
 
         <div id="cart-drawer" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-end">
-            <div class="bg-white rounded-t-3xl w-full max-w-md mx-auto h-[80vh] flex flex-col modal-enter">
+            <div class="bg-white rounded-t-3xl w-full max-w-md mx-auto h-[85vh] flex flex-col modal-enter">
                 <div class="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-3xl">
-                    <h2 class="text-xl font-bold text-gray-800">🛒 結帳清單</h2>
+                    <h2 class="text-xl font-black text-gray-800">🛒 結帳清單</h2>
                     <button onclick="toggleCart()" class="bg-gray-200 text-gray-600 w-8 h-8 rounded-full font-bold">✕</button>
                 </div>
                 <div id="cart-items" class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-100"></div>
-                <div class="p-5 border-t bg-white shrink-0">
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="text-gray-600 font-bold">總計</span><span class="text-3xl font-black text-red-600">$<span id="cart-total">0</span></span>
+                <div class="p-5 border-t bg-white shrink-0 shadow-[0_-5px_15px_rgba(0,0,0,0.05)]">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-gray-600 font-bold text-lg">總計金額</span><span class="text-4xl font-black text-red-600">$<span id="cart-total">0</span></span>
                     </div>
-                    <div class="flex gap-2 mb-3">
-                        <input type="text" id="order-table" placeholder="桌號" class="w-1/4 border-2 p-3 rounded-xl text-center font-bold">
-                        <input type="text" id="order-name" placeholder="您的稱呼" class="w-3/4 border-2 p-3 rounded-xl">
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="order-table" placeholder="桌號 (外帶免填)" class="w-1/3 border-2 p-3 rounded-xl text-center font-bold bg-gray-50">
+                        <input type="text" id="order-name" placeholder="您的稱呼 (必填)" class="w-2/3 border-2 p-3 rounded-xl font-bold bg-gray-50">
                     </div>
-                    <button onclick="submitOrder()" class="w-full bg-red-500 text-white py-4 rounded-xl font-black text-lg shadow-lg">確認送出訂單 🚀</button>
+                    <button onclick="submitOrder()" id="btn-submit" class="w-full bg-red-500 hover:bg-red-600 text-white py-4 rounded-xl font-black text-xl shadow-lg transition-colors">🚀 確認送出訂單</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        const meats = ["里肌豬排","卡拉雞腿","嫩煎雞肉","牛肉培根","香雞排","菲力雞排","鮪魚","培根","燻雞","薯餅","鮮蔬","肉排","起司","火腿","玉米","肉鬆","原味"];
-        const drinks = [
-            {n:"紅茶", m:20, l:25}, {n:"奶茶", m:25, l:30}, {n:"鮮奶茶", m:40, l:50}, {n:"豆漿", m:25, l:30}, {n:"柳橙汁", m:30, l:35},
-            {n:"薏仁漿", m:30, l:35}, {n:"米漿", m:25, l:30}, {n:"拿鐵咖啡", m:55, l:65}, {n:"研磨咖啡", m:45, l:55}, {n:"巧克力牛奶", m:40, l:50},
-            {n:"玉米濃湯", m:35, l:45}, {n:"鹹豆漿", m:30, l:30}, {n:"檸檬紅茶", m:25, l:30}, {n:"百香果汁", m:30, l:35}, {n:"茉莉綠茶", m:20, l:25}, {n:"可樂", m:25, l:30}
+        // === 1. 真實菜單資料庫 (100% 依據圖片) ===
+        const meats_toast = [
+            {n:"煎蛋",p:30},{n:"肉鬆",p:35},{n:"火腿",p:35},{n:"培根",p:35},{n:"起士",p:35},{n:"薯餅",p:40},{n:"肉排",p:40},
+            {n:"鮪魚",p:40},{n:"香雞排",p:45},{n:"里肌豬排",p:45},{n:"鮮蝦",p:45},{n:"燻雞",p:45},{n:"藍帶豬排",p:60},
+            {n:"雞柳",p:60},{n:"明太鱈魚",p:65},{n:"菲力雞排",p:65},{n:"卡拉雞腿(辣味)",p:65}
         ];
-        const jams = ["草莓", "巧克力", "花生", "奶酥", "香蒜", "奶油", "椰香"];
+        const meats_burger = [
+            {n:"煎蛋",p:35},{n:"肉鬆",p:40},{n:"火腿",p:40},{n:"培根",p:40},{n:"起士",p:40},{n:"薯餅",p:45},{n:"肉排",p:45},
+            {n:"鮪魚",p:45},{n:"香雞排",p:50},{n:"里肌豬排",p:50},{n:"鮮蝦",p:50},{n:"燻雞",p:50},{n:"藍帶豬排",p:65},
+            {n:"雞柳",p:65},{n:"明太鱈魚",p:70},{n:"菲力雞排",p:70},{n:"卡拉雞腿(辣味)",p:70}
+        ];
+        const meats_baguette = [
+            {n:"煎蛋",p:50},{n:"肉鬆",p:55},{n:"火腿",p:55},{n:"培根",p:55},{n:"起士",p:55},{n:"薯餅",p:60},{n:"肉排",p:60},
+            {n:"鮪魚",p:60},{n:"香雞排",p:65},{n:"里肌豬排",p:65},{n:"鮮蝦",p:65},{n:"燻雞",p:65},{n:"藍帶豬排",p:80},
+            {n:"明太鱈魚",p:85},{n:"菲力雞排",p:85},{n:"卡拉雞腿(辣味)",p:85}
+        ];
+        const meats_club = [
+            {n:"肉排",p:60},{n:"鮪魚",p:65},{n:"香雞排",p:65},{n:"里肌豬排",p:65},{n:"鮮蝦",p:65},{n:"菲力雞排",p:85}
+        ];
+        const omelets = [
+            {n:"原味",p:30},{n:"玉米",p:35},{n:"九層塔",p:35},{n:"起士",p:35},{n:"肉鬆",p:35},{n:"火腿",p:35},
+            {n:"培根",p:35},{n:"熱狗",p:35},{n:"高麗菜",p:35},{n:"鮪魚",p:40},{n:"肉排",p:40},{n:"香雞排",p:45},
+            {n:"里肌豬排",p:45},{n:"鮮蝦",p:45},{n:"燻雞",p:45},{n:"高麗菜培根",p:50},{n:"雞柳",p:65},{n:"明太鱈魚",p:70}
+        ];
+        const jams = ["奶油/花生", "草莓/巧克力", "椰香奶酥", "藍莓/香蒜"];
+        const flatbreads = [{n:"煎蛋",p:40},{n:"火腿",p:45},{n:"肉鬆",p:45},{n:"培根",p:45},{n:"鮪魚",p:50},{n:"里肌豬排",p:55},{n:"燻雞",p:55}];
+        const drinks = [
+            {n:"紅茶", m:15, l:20}, {n:"奶茶", m:20, l:25}, {n:"豆漿", m:20}, {n:"無糖豆漿", m:20}, {n:"黑芝麻", m:30}, 
+            {n:"杏仁漿", m:30}, {n:"燕麥薏仁", m:30}, {n:"鴛鴦", m:25, l:30}, {n:"鮮奶茶", m:30, l:35}, {n:"特調咖啡", m:25, l:30},
+            {n:"香濃可可", m:30}, {n:"美式咖啡", m:40, l:50}, {n:"鮮奶咖啡", m:50, l:60}, {n:"柳橙汁", m:25, l:30, iceOnly:true}, 
+            {n:"檸檬紅茶", m:25, l:30, iceOnly:true}, {n:"瓶裝牛奶", m:30}
+        ];
 
         const menuData = [
-            { id: "burger", cat: "漢堡", type: "burger", items: meats.map(m => ({ n: m+"蛋漢堡", p: 45 })) },
-            { id: "toast", cat: "吐司", type: "toast", items: meats.map(m => ({ n: m+"蛋吐司", p: 40 })) },
-            { id: "baguette", cat: "軟法", type: "bread_no_egg", items: meats.slice(0,16).map(m => ({ n: m+"軟法", p: 55 })) },
-            { id: "club", cat: "總匯", type: "bread_no_egg", items: ["招牌","里肌豬排","卡拉雞腿","燻雞","鮪魚","香雞排"].map(m => ({ n: m+"總匯", p: 70 })) },
-            { id: "omelet", cat: "蛋餅", type: "omelet", items: ["原味","玉米","起司","火腿","肉鬆","培根","鮪魚","薯餅","豬排","卡拉","燻雞","肉排","熱狗","蔬菜","九層塔","香菜","肉燥","高麗菜"].map(m => ({ n: m+"蛋餅", p: 35 })) },
+            { id: "toast", cat: "吐司", type: "toast", items: meats_toast.map(m => ({ n: m.n+"蛋吐司", p: m.p })) },
+            { id: "burger", cat: "漢堡", type: "burger", items: meats_burger.map(m => ({ n: m.n+"蛋漢堡", p: m.p })) },
+            { id: "baguette", cat: "軟法", type: "bread_no_egg", items: meats_baguette.map(m => ({ n: m.n+"軟法", p: m.p })) },
+            { id: "club", cat: "總匯", type: "bread_no_egg", items: meats_club.map(m => ({ n: m.n+"總匯", p: m.p })) },
+            { id: "noodle", cat: "鐵板麵", type: "noodle", items: [{n:"蘑菇鐵板麵+蛋", p:55}, {n:"黑胡椒鐵板麵+蛋", p:55}, {n:"奶油培根鐵板麵+蛋", p:60}, {n:"義式肉醬鐵板麵+蛋", p:60}, {n:"宮保雞丁鐵板麵+蛋", p:65}, {n:"青醬蟹肉鐵板麵+蛋", p:75}] },
+            { id: "omelet", cat: "蛋餅", type: "omelet", items: omelets.map(m => ({ n: m.n+"蛋餅", p: m.p })) },
             { id: "combo", cat: "套餐", type: "combo", items: [
-                {n:"1號餐(鐵板麵+豬排+蛋+中紅)", p:85}, {n:"2號餐(蘿蔔糕+煎餃+蛋餅+中紅)", p:105}, 
-                {n:"3號餐(沙拉吐司+火腿熱狗+蛋+中紅)", p:95}, {n:"4號餐(兒童餐:果醬吐司+小點+中紅)", p:65}
+                {n:"1號餐(麵+豬排+蛋+中紅)", p:85}, {n:"2號餐(蘿蔔糕+煎餃+蛋餅+中紅)", p:70}, 
+                {n:"3號餐(沙拉吐司+火腿熱狗+蛋+中紅)", p:65}, {n:"兒童餐(果醬吐司+雞塊+薯條+熱狗+中紅)", p:60}
             ] },
-            { id: "jam", cat: "果醬吐司", type: "jam", items: [...jams.map(f => ({ n: f+"吐司", p: 20 })), { n: "雙色果醬厚片", p: 35, isTwo: true }] },
-            { id: "flatbread", cat: "乳酪餅", type: "flatbread", items: [...jams.map(f => ({ n: f+"乳酪餅", p: 35 })), ...["肉排","培根","鮪魚","燻雞","火腿","玉米","肉鬆"].map(m => ({ n: m+"乳酪餅", p: 45 }))] },
-            { id: "noodle", cat: "鐵板麵", type: "noodle", items: ["鐵板麵+蛋"] },
-            { id: "snack", cat: "小點", type: "snack", items: [{n:"手工蘿蔔糕", p:35}, {n:"薯條", p:30}, {n:"雞塊(5塊)", p:35}, {n:"熱狗(3支)", p:25}, {n:"薯餅", p:20}, {n:"雞米花", p:40}, {n:"洋蔥圈", p:35}, {n:"小熱狗(5支)", p:25}, {n:"甜不辣", p:30}, {n:"花枝丸", p:35}, {n:"蔥抓餅", p:35}, {n:"蔥餅加蛋", p:45}, {n:"地瓜球", p:35}, {n:"銀絲卷", p:30}, {n:"起司條", p:40}, {n:"德式香腸", p:35}] },
-            { id: "chinese", cat: "中式輕食", type: "chinese", items: [{n:"煎餃(8顆)", p:40}, {n:"小籠包(6顆)", p:50}, {n:"燒餅蛋", p:35}, {n:"飯糰蛋", p:45}, {n:"鹹豆漿", p:30}, {n:"荷包蛋", p:15}, {n:"蔥蛋", p:20}] },
-            { id: "drink", cat: "飲料", type: "drink", items: drinks.map(d => ({ n: d.n, pm: d.m, pl: d.l })) }
+            { id: "jam", cat: "果醬吐司", type: "jam", items: [...jams.map(f => ({ n: f+"吐司", p: 15 })), { n: "雙色果醬厚片", p: 30, isTwo: true }] },
+            { id: "flatbread", cat: "乳酪餅", type: "flatbread", items: [...jams.map(f => ({ n: f+"乳酪餅", p: 35 })), ...flatbreads.map(m => ({ n: m.n+"乳酪餅+蛋", p: m.p }))] },
+            { id: "snack", cat: "小點", type: "snack", items: [{n:"培根", p:15}, {n:"火腿", p:15}, {n:"熱狗(4條)", p:20}, {n:"薯餅", p:20}, {n:"薯條", p:30}, {n:"里肌肉排", p:30}, {n:"小雞球", p:35}, {n:"麥克雞塊(5塊)", p:40}, {n:"檸檬雞柳條(3條)", p:45}, {n:"薯餅塔(黃芥末醬)", p:45}, {n:"法式吐司(蜂蜜)", p:45}, {n:"德式香腸(2條)", p:50}, {n:"生菜沙拉", p:50}, {n:"菲力雞排", p:50}, {n:"卡拉雞腿(辣味)", p:50}, {n:"藍帶豬排", p:50}] },
+            { id: "chinese", cat: "中式輕食", type: "chinese", items: [{n:"荷包蛋", p:15}, {n:"九層塔蛋", p:20}, {n:"玉米蛋", p:25}, {n:"蔥抓餅", p:30}, {n:"煎餃", p:35}, {n:"蘿蔔糕(1片20元)", p:35}, {n:"蘿蔔糕辣炒塔香蛋", p:60}] },
+            { id: "drink", cat: "飲料", type: "drink", items: drinks.map(d => ({ n: d.n, pm: d.m, pl: d.l, iceOnly: d.iceOnly })) }
         ];
 
         let cart = [];
         let curItem = null;
         let basePrice = 0;
 
+        // === 2. 畫面初始化 ===
         function init() {
             const nav = document.getElementById('nav-bar');
             const menuBox = document.getElementById('menu-box');
@@ -109,177 +134,190 @@
             menuData.forEach((sec, idx) => {
                 const btn = document.createElement('button');
                 btn.id = `nav-${sec.id}`;
-                btn.className = `nav-btn px-4 py-2 text-sm text-gray-500 font-bold rounded-full bg-white ${idx === 0 ? 'active' : ''}`;
+                btn.className = `nav-btn px-4 py-2 text-sm text-gray-500 font-bold rounded-full bg-white shadow-sm ${idx === 0 ? 'active' : ''}`;
                 btn.innerText = sec.cat;
                 btn.onclick = () => document.getElementById(`sec-${sec.id}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
                 nav.appendChild(btn);
 
                 const secDiv = document.createElement('section');
                 secDiv.id = `sec-${sec.id}`;
-                secDiv.className = "pt-2 scroll-mt-16";
+                secDiv.className = "pt-3 scroll-mt-16";
                 secDiv.innerHTML = `<h2 class="text-xl font-black mb-4 border-l-4 border-orange-500 pl-3 text-gray-800">${sec.cat}</h2>`;
                 const grid = document.createElement('div');
                 grid.className = "grid grid-cols-1 gap-3";
 
                 sec.items.forEach(item => {
-                    let pText = sec.type === 'drink' ? `$${item.pm} / $${item.pl}` : `$${item.p || 50}`;
+                    let pText = sec.type === 'drink' ? (item.pl ? `$${item.pm} / $${item.pl}` : `$${item.pm}`) : `$${item.p}`;
                     grid.innerHTML += `
                         <div onclick='openModal(${JSON.stringify(item)}, "${sec.type}")' class="bg-white p-4 rounded-2xl shadow-sm border flex justify-between items-center active:scale-95 transition-transform cursor-pointer">
                             <span class="font-bold text-gray-700 text-lg">${item.n}</span>
-                            <span class="text-orange-600 font-black">${pText} <span class="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full ml-1">+</span></span>
+                            <span class="text-orange-600 font-black">${pText} <span class="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full ml-1 font-bold">+</span></span>
                         </div>`;
                 });
                 secDiv.appendChild(grid);
                 menuBox.appendChild(secDiv);
             });
 
-            // 滑動同步導航 (Scroll Spy)
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
                         const actBtn = document.getElementById(entry.target.id.replace('sec-', 'nav-'));
-                        if (actBtn) {
-                            actBtn.classList.add('active');
-                            actBtn.scrollIntoView({ inline: 'center', behavior: 'smooth' });
-                        }
+                        if (actBtn) { actBtn.classList.add('active'); actBtn.scrollIntoView({ inline: 'center', behavior: 'smooth', block:'nearest' }); }
                     }
                 });
             }, { rootMargin: '-20% 0px -70% 0px' });
             document.querySelectorAll('section').forEach(sec => observer.observe(sec));
         }
 
-        // ================= 動態客製化渲染 =================
+        // === 3. 動態客製化渲染 ===
         function openModal(item, type) {
-            curItem = item; 
-            curItem.type = type;
-            basePrice = item.p || (type === 'drink' ? item.pm : 50);
+            curItem = item; curItem.type = type;
+            basePrice = item.p || (type === 'drink' ? item.pm : 0);
             
             document.getElementById('modal-title').innerText = item.n;
             document.getElementById('modal-note').value = '';
             const dyn = document.getElementById('modal-dynamic-options');
             dyn.innerHTML = '';
 
-            const createRadio = (name, val, label, checked, price=0) => `
+            const radio = (grp, val, label, checked, price=0) => `
                 <label class="flex-1 cursor-pointer">
-                    <input type="radio" name="${name}" value="${val}|${price}" ${checked?'checked':''} class="opt-radio hidden" onchange="calcPrice()">
+                    <input type="radio" name="${grp}" value="${val}|${price}" ${checked?'checked':''} class="hidden opt-radio" onchange="calcPrice()">
                     <div class="border-2 p-3 rounded-xl text-center font-bold text-gray-600 transition-colors">${label} ${price!=0 ? (price>0?'+'+price:price) : ''}</div>
                 </label>`;
-            const createCheck = (val, label, price=0) => `
+            const check = (grp, val, label, price=0) => `
                 <label class="flex-1 cursor-pointer">
-                    <input type="checkbox" value="${val}|${price}" class="opt-check opt-checkbox hidden" onchange="calcPrice()">
+                    <input type="checkbox" name="${grp}" value="${val}|${price}" class="hidden opt-checkbox" onchange="calcPrice()">
                     <div class="border-2 p-3 rounded-xl text-center font-bold text-gray-600 transition-colors">${label} ${price!=0 ? '+'+price : ''}</div>
                 </label>`;
-            const eggDoneness = `<div id="egg-doneness" class="mt-3"><p class="text-sm font-bold text-orange-600 mb-2">蛋要怎麼熟？</p>
-                <div class="flex gap-2">${createRadio('egg_done', '全熟', '全熟', true)}${createRadio('egg_done', '半熟', '半熟', false)}</div></div>`;
-            const drinkTemp = `<p class="text-sm font-bold text-gray-500 mb-2 mt-4">冰塊與溫度</p>
-                <div class="grid grid-cols-3 gap-2">${['冰','少冰','去冰','溫','熱'].map((t,i)=>createRadio('d_temp', t, t, i===0)).join('')}</div>`;
-
-            // 1. 漢堡 / 吐司 (內含蛋)
-            if (type === 'burger' || type === 'toast') {
-                dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">蛋的選擇</p>
-                    <div class="flex gap-2">${createRadio('has_egg', '正常含蛋', '正常含蛋', true, 0)}${createRadio('has_egg', '不加蛋', '不加蛋', false, -5)}</div>`;
-                dyn.innerHTML += `<div id="egg-wrapper">${eggDoneness}</div>`;
-                
-                let excludes = type === 'burger' ? ['沙拉','生菜','洋蔥','番茄片','番茄醬','胡椒粉'] : ['沙拉','小黃瓜','胡椒粉'];
-                dyn.innerHTML += `<p class="font-bold text-red-500 mb-2 mt-4">⚠️ 挑食專區 (不吃請點選)</p>
-                    <div class="grid grid-cols-3 gap-2">${excludes.map(e => createCheck('去'+e, '去'+e)).join('')}</div>`;
-                
-                if (type === 'toast') dyn.innerHTML += `<div class="mt-4">${createCheck('加生菜', '加生菜', 5)}</div>`;
+            
+            const eggDoneness = `<div id="egg-wrapper" class="mt-4"><p class="text-sm font-bold text-orange-600 mb-2">蛋的熟度</p>
+                <div class="flex gap-2">${radio('egg_done', '全熟', '全熟', true)}${radio('egg_done', '半熟', '半熟', false)}</div></div>`;
+            const drinkTemp = (iceOnly=false) => `<p class="text-sm font-bold text-gray-500 mb-2 mt-5">冰塊與溫度 (無少冰)</p>
+                <div class="grid grid-cols-4 gap-2">${radio('d_temp', '冰', '冰', true)}${radio('d_temp', '去冰', '去冰', false)}${iceOnly?'':radio('d_temp', '溫', '溫', false)+radio('d_temp', '熱', '熱', false)}</div>`;
+            
+            // 全域加起司
+            if (type !== 'drink' && type !== 'combo') {
+                dyn.innerHTML += `<div class="mb-5 flex gap-2">${check('addons', '加起司', '加起司', 10)}</div>`;
             }
 
-            // 2. 軟法 / 總匯 (無自帶蛋)
+            // 1. 漢堡 / 吐司 / 鐵板麵 (預設含蛋)
+            if (type === 'burger' || type === 'toast' || type === 'noodle') {
+                dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">蛋的選擇</p>
+                    <div class="flex gap-2">${radio('has_egg', '正常含蛋', '正常含蛋', true, 0)}${radio('has_egg', '不加蛋', '不加蛋', false, -5)}</div>${eggDoneness}`;
+                
+                let excludes = type === 'toast' ? ['沙拉','小黃瓜','胡椒粉'] : (type === 'burger' ? ['沙拉','生菜','洋蔥','番茄片','番茄醬','胡椒粉'] : []);
+                if (excludes.length > 0) dyn.innerHTML += `<p class="font-bold text-red-500 mb-2 mt-5">⚠️ 挑食專區 (不吃請打勾)</p>
+                    <div class="grid grid-cols-3 gap-2">${excludes.map(e => check('excludes', '去'+e, '去'+e)).join('')}</div>`;
+                if (type === 'toast') dyn.innerHTML += `<div class="mt-5 flex gap-2">${check('addons', '加生菜', '加生菜', 5)}</div>`;
+            }
+
+            // 2. 軟法 / 總匯 (無預設蛋)
             if (type === 'bread_no_egg') {
-                dyn.innerHTML += `<p class="font-bold text-red-500 mb-2">⚠️ 挑食專區 (不吃請點選)</p>
-                    <div class="grid grid-cols-3 gap-2">${['沙拉','生菜','洋蔥','番茄片','番茄醬','胡椒粉'].map(e => createCheck('去'+e, '去'+e)).join('')}</div>`;
-                dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2 mt-4">加料</p><div class="flex gap-2">${createCheck('加蛋', '加蛋', 15)}</div>`;
-                dyn.innerHTML += `<div id="egg-wrapper" class="hidden">${eggDoneness}</div>`;
+                dyn.innerHTML += `<p class="font-bold text-red-500 mb-2">⚠️ 挑食專區 (不吃請打勾)</p>
+                    <div class="grid grid-cols-3 gap-2">${['沙拉','生菜','洋蔥','番茄片','番茄醬','胡椒粉'].map(e => check('excludes', '去'+e, '去'+e)).join('')}</div>`;
+                dyn.innerHTML += `<div class="mt-5 flex gap-2">${check('addons', '加蛋', '加蛋', 15)}</div>
+                    <div id="egg-wrapper-hidden" style="display:none;">${eggDoneness}</div>`;
             }
 
-            // 3. 鐵板麵
-            if (type === 'noodle') {
-                dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">選擇口味</p>
-                    <div class="grid grid-cols-2 gap-2 mb-4">${['黑胡椒','蘑菇','義大利肉醬','沙茶','宮保雞丁','打拋豬肉'].map((f,i)=>createRadio('n_flavor', f, f, i===0)).join('')}</div>`;
-                dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">蛋的選擇</p>
-                    <div class="flex gap-2">${createRadio('has_egg', '正常含蛋', '正常含蛋', true, 0)}${createRadio('has_egg', '不加蛋', '不加蛋', false, -5)}</div>`;
-                dyn.innerHTML += `<div id="egg-wrapper">${eggDoneness}</div>`;
-            }
-
-            // 4. 蛋餅
+            // 3. 蛋餅
             if (type === 'omelet') {
                 dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">醬料選擇</p>
-                    <div class="flex gap-2">${createRadio('sauce', '醬油膏', '醬油膏', true)}${createRadio('sauce', '辣椒醬油', '辣椒醬油', false)}${createRadio('sauce', '不加醬', '不加醬', false)}</div>`;
+                    <div class="flex gap-2">${radio('sauce', '醬油', '醬油', true)}${radio('sauce', '辣椒醬油', '辣椒醬油', false)}${radio('sauce', '不加醬', '不加醬', false)}</div>`;
             }
 
-            // 5. 中式 / 荷包蛋
+            // 4. 中式輕食
             if (type === 'chinese') {
-                if (item.n === '荷包蛋') {
-                    dyn.innerHTML += eggDoneness;
-                } else {
-                    dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">醬料與加料</p>
-                        <div class="grid grid-cols-2 gap-2">${createCheck('加醬油','加醬油')}${createCheck('加辣椒醬油','加辣椒醬油')}${createCheck('不加醬','不加醬')}${createCheck('加胡椒粉','加胡椒粉')}</div>
-                        <div class="mt-3 flex gap-2">${createCheck('加蛋', '加蛋', 15)}</div><div id="egg-wrapper" class="hidden">${eggDoneness}</div>`;
-                }
+                if (item.n.includes('蛋')) dyn.innerHTML += eggDoneness;
+                else dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">調味選擇</p>
+                    <div class="grid grid-cols-2 gap-2">${check('condiments','加醬油','加醬油')}${check('condiments','加辣椒醬油','加辣椒醬油')}${check('condiments','不加醬','不加醬')}${check('condiments','加胡椒粉','加胡椒粉')}</div>
+                    <div class="mt-5 flex gap-2">${check('addons', '加蛋', '加蛋', 15)}</div><div id="egg-wrapper-hidden" style="display:none;">${eggDoneness}</div>`;
             }
 
-            // 6. 小點
+            // 5. 小點
             if (type === 'snack') {
-                dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">調味</p>
-                    <div class="flex gap-2">${createCheck('加胡椒粉','加胡椒粉')}${createCheck('加番茄醬','加番茄醬')}</div>`;
+                dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">調味選擇</p>
+                    <div class="flex gap-2">${check('condiments','加胡椒粉','加胡椒粉')}${check('condiments','加番茄醬','加番茄醬')}</div>`;
             }
 
-            // 7. 果醬
+            // 6. 果醬
             if (type === 'jam') {
                 if (!item.isTwo) {
+                    let flavors = ["奶油","花生","草莓","巧克力","椰香奶酥","藍莓","香蒜"];
+                    if(item.n.includes("/")) {
+                        let fs = item.n.replace('吐司','').split('/');
+                        dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">選擇細項口味</p>
+                        <div class="flex gap-2 mb-5">${radio('jam_f', fs[0], fs[0], true)}${radio('jam_f', fs[1], fs[1], false)}</div>`;
+                    }
                     dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">厚度選擇</p>
-                        <div class="flex gap-2">${createRadio('j_thick', '薄片', '薄片', true, 0)}${createRadio('j_thick', '厚片', '厚片', false, 5)}</div>`;
+                        <div class="flex gap-2">${radio('j_thick', '薄片', '薄片', true, 0)}${radio('j_thick', '厚片', '厚片', false, 10)}</div>`;
                 } else {
-                    let jOpts = jams.map(j => `<option value="${j}">${j}</option>`).join('');
+                    let jOpts = ["奶油","花生","草莓","巧克力","椰香奶酥","藍莓","香蒜"].map(j => `<option value="${j}">${j}</option>`).join('');
                     dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">選2種口味</p>
                         <div class="flex gap-2"><select id="jam1" class="flex-1 border-2 p-3 rounded-xl font-bold bg-white">${jOpts}</select>
                         <select id="jam2" class="flex-1 border-2 p-3 rounded-xl font-bold bg-white">${jOpts.replace('巧克力', '巧克力" selected"')}</select></div>`;
                 }
-                dyn.innerHTML += `<div class="mt-4 flex gap-2">${createCheck('加厚果醬', '加厚果醬', 5)}</div>`;
+                dyn.innerHTML += `<div class="mt-5 flex gap-2">${check('addons', '加厚果醬', '加厚果醬', 5)}</div>`;
+            }
+            
+            // 7. 乳酪餅 (預設有蛋)
+            if (type === 'flatbread') {
+                dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">蛋的選擇</p>
+                    <div class="flex gap-2">${radio('has_egg', '正常含蛋', '正常含蛋', true, 0)}${radio('has_egg', '不加蛋', '不加蛋', false, -5)}</div>${eggDoneness}`;
+                if(item.n.includes("/")) {
+                    let fs = item.n.replace('乳酪餅','').split('/');
+                    dyn.innerHTML += `<p class="font-bold text-gray-500 mt-5 mb-2">選擇細項口味</p>
+                    <div class="flex gap-2">${radio('jam_f', fs[0], fs[0], true)}${radio('jam_f', fs[1], fs[1], false)}</div>`;
+                }
             }
 
-            // 8. 飲料 (單點)
+            // 8. 飲料
             if (type === 'drink') {
-                dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">大小杯</p>
-                    <div class="flex gap-2">${createRadio('d_size', '中杯', '中杯', true, 0)}${createRadio('d_size', '大杯', '大杯', false, item.pl - item.pm)}</div>`;
-                dyn.innerHTML += drinkTemp;
+                if(item.pl) {
+                    dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">大小杯</p>
+                    <div class="flex gap-2">${radio('d_size', '中杯', '中杯', true, 0)}${radio('d_size', '大杯', '大杯', false, item.pl - item.pm)}</div>`;
+                }
+                if(item.n.includes('瓶裝牛奶')) dyn.innerHTML += `<div class="mt-4 flex gap-2">${check('addons', '換杯', '換杯', 5)}</div>`;
+                dyn.innerHTML += drinkTemp(item.iceOnly);
             }
 
             // 9. 套餐
             if (type === 'combo') {
+                if(item.n.includes('1號餐')) dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">鐵板麵口味</p>
+                    <div class="flex gap-2 mb-5">${radio('n_flavor', '蘑菇', '蘑菇', true)}${radio('n_flavor', '黑胡椒', '黑胡椒', false)}</div>`;
                 if(item.n.includes('2號餐')) dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">蛋餅醬料</p>
-                    <div class="flex gap-2 mb-4">${createRadio('sauce', '醬油膏', '醬油膏', true)}${createRadio('sauce', '辣椒醬油', '辣椒醬油', false)}${createRadio('sauce', '不加醬', '不加醬', false)}</div>`;
-                if(item.n.includes('兒童餐')) dyn.innerHTML += `<p class="font-bold text-orange-500 mb-2">果醬吐司口味備註</p>
-                    <input type="text" id="combo-jam-note" placeholder="如：草莓薄片" class="w-full border-2 p-3 rounded-xl mb-4 focus:border-orange-500 outline-none">`;
+                    <div class="flex gap-2 mb-5">${radio('sauce', '醬油', '醬油', true)}${radio('sauce', '辣椒醬油', '辣椒醬油', false)}${radio('sauce', '不加醬', '不加醬', false)}</div>`;
+                if(item.n.includes('兒童餐')) dyn.innerHTML += `<p class="font-bold text-orange-500 mb-2">兒童餐果醬吐司口味 (必選)</p>
+                    <div class="grid grid-cols-3 gap-2 mb-5">${["奶油","花生","草莓","巧克力","椰香奶酥","香蒜"].map((f,i)=>radio('kids_jam', f, f, i===3)).join('')}</div>`;
                 if(item.n.includes('蛋')) dyn.innerHTML += eggDoneness;
 
                 let dOpts = '';
                 drinks.forEach(d => {
-                    dOpts += `<option value="${d.n}(中)|${d.m-20}">${d.n}(中) ${d.m-20>0?'+'+(d.m-20):'+0'}</option>`;
-                    dOpts += `<option value="${d.n}(大)|${d.l-20}">${d.n}(大) ${d.l-20>0?'+'+(d.l-20):'+0'}</option>`;
+                    let diffM = d.m - 10;
+                    dOpts += `<option value="${d.n}(中)|${diffM}">${d.n}(中) ${diffM>0?'+'+diffM:'+0'}元</option>`;
+                    if(d.l) {
+                        let diffL = d.l - 10;
+                        dOpts += `<option value="${d.n}(大)|${diffL}">${d.n}(大) ${diffL>0?'+'+diffL:'+0'}元</option>`;
+                    }
                 });
-                dyn.innerHTML += `<p class="font-bold text-orange-600 mb-2 mt-4">✦ 飲料換購</p>
-                    <select id="combo-drink" class="w-full border-2 p-3 rounded-xl font-bold bg-white outline-none mb-3" onchange="calcPrice()">${dOpts}</select>`;
-                dyn.innerHTML += drinkTemp;
+                dyn.innerHTML += `<p class="font-bold text-orange-600 mb-2 mt-5">✦ 飲料換購 (折抵10元)</p>
+                    <select id="combo-drink" class="w-full border-2 p-3 rounded-xl font-bold bg-orange-50 text-orange-800 outline-none" onchange="calcPrice()">${dOpts}</select>${drinkTemp()}`;
             }
+
+            dyn.addEventListener('change', (e) => {
+                if (e.target.name === 'has_egg') {
+                    let wrapper = document.getElementById('egg-wrapper');
+                    if(wrapper) wrapper.style.display = e.target.value.includes('正常') ? 'block' : 'none';
+                }
+                if (e.target.name === 'addons' && e.target.value.includes('加蛋')) {
+                    let wrapper = document.getElementById('egg-wrapper-hidden');
+                    if(wrapper) wrapper.style.display = e.target.checked ? 'block' : 'none';
+                }
+            });
 
             document.getElementById('option-modal').classList.remove('hidden');
             document.getElementById('option-modal').classList.add('flex');
-            calcPrice();
-            
-            // 監聽蛋的顯示/隱藏
-            dyn.addEventListener('change', (e) => {
-                if(e.target.name === 'has_egg') {
-                    document.getElementById('egg-wrapper').style.display = e.target.value.includes('正常') ? 'block' : 'none';
-                }
-                if(e.target.value.includes('加蛋|')) {
-                    document.getElementById('egg-wrapper').style.display = e.target.checked ? 'block' : 'none';
-                }
-            });
+            setTimeout(calcPrice, 10);
         }
 
         function closeModal() {
@@ -289,57 +327,61 @@
 
         function calcPrice() {
             let total = basePrice;
-            // 加上所有 Radio 的價格差
             document.querySelectorAll('#modal-dynamic-options input[type="radio"]:checked').forEach(r => total += parseInt(r.value.split('|')[1]||0));
-            // 加上所有 Checkbox 的價格差
             document.querySelectorAll('#modal-dynamic-options input[type="checkbox"]:checked').forEach(c => total += parseInt(c.value.split('|')[1]||0));
-            // 加上套餐飲料差價
             let comboDrink = document.getElementById('combo-drink');
             if (comboDrink) total += parseInt(comboDrink.value.split('|')[1]||0);
 
             document.getElementById('modal-price-display').innerText = '$' + total;
-            document.getElementById('modal-calc-price').innerText = total;
         }
 
+        // === 4. 購物車核心 ===
         function addToCart() {
-            let p = parseInt(document.getElementById('modal-calc-price').innerText);
+            let p = parseInt(document.getElementById('modal-price-display').innerText.replace('$',''));
             let n = curItem.n;
             let details = [];
 
-            // 鐵板麵口味組合
-            let nFlavor = document.querySelector('input[name="n_flavor"]:checked');
-            if (nFlavor) n = nFlavor.value.split('|')[0] + n;
+            // 處理雙口味名稱替代
+            let jamF = document.querySelector('input[name="jam_f"]:checked');
+            if(jamF) n = n.replace(/.*?\//, jamF.value.split('|')[0]);
 
-            // 抓取 Radio
+            // 處理細項
             document.querySelectorAll('#modal-dynamic-options input[type="radio"]:checked').forEach(r => {
                 let val = r.value.split('|')[0];
-                if(val !== '正常含蛋' && val !== '薄片' && val !== '中杯' && r.name !== 'n_flavor') details.push(val);
-                // 蛋熟度組合
-                if(r.name === 'egg_done') details[details.length-1] = `[${val}]`; 
+                if(!['正常含蛋', '薄片', '中杯', 'jam_f'].includes(val) && r.name !== 'jam_f') {
+                    if (r.name === 'egg_done') {
+                        let hasEgg = document.querySelector('input[name="has_egg"]:checked');
+                        let addEgg = document.querySelector('input[value^="加蛋|"]:checked');
+                        if ((hasEgg && hasEgg.value.includes('正常')) || addEgg || n.includes('蛋') || curItem.type === 'combo') {
+                            details.push(`[${val}]`);
+                        }
+                    } else if (r.name === 'n_flavor') {
+                        n = val + n; // 鐵板麵冠名
+                    } else if (r.name === 'kids_jam') {
+                        details.push(`兒童餐果醬:${val}`);
+                    } else {
+                        details.push(val);
+                    }
+                }
             });
 
-            // 抓取 Checkbox
             document.querySelectorAll('#modal-dynamic-options input[type="checkbox"]:checked').forEach(c => details.push(c.value.split('|')[0]));
 
-            // 下拉選單處理
             let comboDrink = document.getElementById('combo-drink');
             if (comboDrink) details.push(`飲:${comboDrink.value.split('|')[0]}`);
             let jam1 = document.getElementById('jam1'); let jam2 = document.getElementById('jam2');
             if (jam1 && jam2) details.push(`(${jam1.value}+${jam2.value})`);
-            let comboJam = document.getElementById('combo-jam-note');
-            if (comboJam && comboJam.value) details.push(`果醬:${comboJam.value}`);
 
             let note = document.getElementById('modal-note').value;
-            if (note) details.push(`備註:${note}`);
+            if (note) details.push(`備:${note}`);
 
             cart.push({ n: n, p: p, d: details.join(' / ') });
             updateCart();
             closeModal();
             
-            // 購物車跳動動畫
             const cBtn = document.getElementById('cart-count');
-            cBtn.classList.add('scale-150', 'bg-red-500', 'text-white');
-            setTimeout(() => cBtn.classList.remove('scale-150', 'bg-red-500', 'text-white'), 300);
+            cBtn.classList.add('scale-150');
+            setTimeout(() => cBtn.classList.remove('scale-150'), 300);
         }
 
         function updateCart() {
@@ -349,12 +391,12 @@
             let t = 0;
             cart.forEach((i, idx) => {
                 t += i.p;
-                let redText = i.d.replace(/不加蛋|去[^\s\/]+|不加醬/g, match => `<span class="text-red-500 font-bold">${match}</span>`);
+                let redText = i.d.replace(/不加蛋|去[^\s\/]+|不加醬/g, m => `<span class="text-red-500 font-bold">${m}</span>`);
                 cDiv.innerHTML += `
                     <div class="bg-white p-3 rounded-xl border flex justify-between items-center shadow-sm">
                         <div><div class="font-bold text-gray-800">${i.n}</div><div class="text-xs text-gray-500 mt-1">${redText}</div></div>
                         <div class="flex items-center gap-3"><span class="font-black text-orange-600">$${i.p}</span>
-                        <button onclick="removeCart(${idx})" class="text-red-400 font-bold text-sm">刪除</button></div>
+                        <button onclick="removeCart(${idx})" class="text-red-400 font-bold text-sm bg-red-50 px-2 py-1 rounded">刪除</button></div>
                     </div>`;
             });
             document.getElementById('cart-total').innerText = t;
@@ -369,15 +411,16 @@
         function submitOrder() {
             const name = document.getElementById('order-name').value;
             const table = document.getElementById('order-table').value;
-            if (!name) return alert("請輸入稱呼！");
-            if (cart.length === 0) return alert("購物車是空的！");
+            if (!name) return alert("老闆/老闆娘好，請客人輸入稱呼唷！");
+            if (cart.length === 0) return alert("購物車目前是空的喔！");
 
+            document.getElementById('btn-submit').innerText = '傳送中...';
             database.ref('orders').push({
                 customer: name, table: table || "外帶", items: cart,
                 total: parseInt(document.getElementById('cart-total').innerText),
                 time: new Date().toLocaleString()
             }).then(() => {
-                alert("🎉 訂單成功送出！");
+                alert("🎉 訂單成功送出給煎台阿姨囉！");
                 location.reload();
             });
         }
