@@ -71,7 +71,7 @@
     </div>
 
     <script>
-        // === 0. Firebase 資料庫連線設定 (上一版漏掉的關鍵) ===
+        // === 🔑 這裡是我上次漏掉的關鍵：連接您的真實資料庫！ ===
         const firebaseConfig = {
             apiKey: "AIzaSyBg6_9BpcXndrwKL0l1jcp5kYdk8qza-4Q",
             databaseURL: "https://test-7c0ce-default-rtdb.firebaseio.com",
@@ -83,7 +83,7 @@
         }
         const database = firebase.database();
 
-        // === 1. 真實菜單資料庫 ===
+        // === 1. 菜單資料庫 ===
         const meats_toast = [
             {n:"煎蛋",p:30},{n:"肉鬆",p:35},{n:"火腿",p:35},{n:"培根",p:35},{n:"起士",p:35},{n:"薯餅",p:40},{n:"肉排",p:40},
             {n:"鮪魚",p:40},{n:"香雞排",p:45},{n:"里肌豬排",p:45},{n:"鮮蝦",p:45},{n:"燻雞",p:45},{n:"藍帶豬排",p:60},
@@ -138,7 +138,6 @@
         let curItem = null;
         let basePrice = 0;
 
-        // === 2. 畫面初始化 ===
         function init() {
             const nav = document.getElementById('nav-bar');
             const menuBox = document.getElementById('menu-box');
@@ -182,7 +181,6 @@
             document.querySelectorAll('section').forEach(sec => observer.observe(sec));
         }
 
-        // === 3. 動態客製化渲染 ===
         function openModal(item, type) {
             curItem = item; curItem.type = type;
             basePrice = item.p || (type === 'drink' ? item.pm : 0);
@@ -208,12 +206,10 @@
             const drinkTemp = (iceOnly=false) => `<p class="text-sm font-bold text-gray-500 mb-2 mt-5">冰塊與溫度 (無少冰)</p>
                 <div class="grid grid-cols-4 gap-2">${radio('d_temp', '冰', '冰', true)}${radio('d_temp', '去冰', '去冰', false)}${iceOnly?'':radio('d_temp', '溫', '溫', false)+radio('d_temp', '熱', '熱', false)}</div>`;
             
-            // 全域加起司 (小點除外)
             if (type !== 'drink' && type !== 'combo' && type !== 'snack') {
                 dyn.innerHTML += `<div class="mb-5 flex gap-2">${check('addons', '加起司', '加起司', 10)}</div>`;
             }
 
-            // 1. 漢堡 / 吐司 / 鐵板麵
             if (type === 'burger' || type === 'toast' || type === 'noodle') {
                 dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">蛋的選擇</p>
                     <div class="flex gap-2">${radio('has_egg', '正常含蛋', '正常含蛋', true, 0)}${radio('has_egg', '不加蛋', '不加蛋', false, -5)}</div>${eggDoneness}`;
@@ -224,7 +220,6 @@
                 if (type === 'toast') dyn.innerHTML += `<div class="mt-5 flex gap-2">${check('addons', '加生菜', '加生菜', 5)}</div>`;
             }
 
-            // 2. 軟法 / 總匯
             if (type === 'bread_no_egg') {
                 dyn.innerHTML += `<p class="font-bold text-red-500 mb-2">⚠️ 挑食專區 (不吃請打勾)</p>
                     <div class="grid grid-cols-3 gap-2">${['沙拉','生菜','洋蔥','番茄片','番茄醬','胡椒粉'].map(e => check('excludes', '去'+e, '去'+e)).join('')}</div>`;
@@ -232,13 +227,11 @@
                     <div id="egg-wrapper-hidden" style="display:none;">${eggDoneness}</div>`;
             }
 
-            // 3. 蛋餅
             if (type === 'omelet') {
                 dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">醬料選擇</p>
                     <div class="flex gap-2">${radio('sauce', '醬油膏', '醬油膏', true)}${radio('sauce', '辣椒醬油', '辣椒醬油', false)}${radio('sauce', '不加醬', '不加醬', false)}</div>`;
             }
 
-            // 4. 中式輕食
             if (type === 'chinese') {
                 dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">醬料選擇</p>
                     <div class="flex flex-wrap gap-2 mb-3">
@@ -253,17 +246,15 @@
                 } else if (item.n === '蔥抓餅' || item.n === '煎餃' || item.n.includes('蘿蔔糕')) {
                     dyn.innerHTML += `<div class="mt-4 flex gap-2">${check('addons', '加蛋', '加蛋', 15)}</div><div id="egg-wrapper-hidden" style="display:none;">${eggDoneness}</div>`;
                 } else if (item.n.includes('蛋')) {
-                    dyn.innerHTML += eggDoneness; // 九層塔蛋等
+                    dyn.innerHTML += eggDoneness;
                 }
             }
 
-            // 5. 小點
             if (type === 'snack') {
                 dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">調味選擇</p>
                     <div class="flex gap-2">${check('condiments','加胡椒粉','加胡椒粉')}${check('condiments','加番茄醬','加番茄醬')}</div>`;
             }
 
-            // 6. 果醬
             if (type === 'jam') {
                 if (!item.isTwo) {
                     dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">厚度選擇</p>
@@ -277,13 +268,11 @@
                 dyn.innerHTML += `<div class="mt-5 flex gap-2">${check('addons', '加厚果醬', '加厚果醬', 5)}</div>`;
             }
             
-            // 7. 乳酪餅
             if (type === 'flatbread') {
                 dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">蛋的選擇</p>
                     <div class="flex gap-2">${radio('has_egg', '正常含蛋', '正常含蛋', true, 0)}${radio('has_egg', '不加蛋', '不加蛋', false, -5)}</div>${eggDoneness}`;
             }
 
-            // 8. 飲料
             if (type === 'drink') {
                 if(item.pl) {
                     dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">大小杯</p>
@@ -293,7 +282,6 @@
                 dyn.innerHTML += drinkTemp(item.iceOnly);
             }
 
-            // 9. 套餐
             if (type === 'combo') {
                 if(item.n.includes('2號餐')) dyn.innerHTML += `<p class="font-bold text-gray-500 mb-2">蛋餅醬料</p>
                     <div class="flex gap-2 mb-5">${radio('sauce', '醬油膏', '醬油膏', true)}${radio('sauce', '辣椒醬油', '辣椒醬油', false)}${radio('sauce', '不加醬', '不加醬', false)}</div>`;
@@ -350,7 +338,6 @@
             document.getElementById('modal-price-display').innerText = '$' + total;
         }
 
-        // === 4. 購物車與訂單送出邏輯 ===
         function addToCart() {
             let p = parseInt(document.getElementById('modal-price-display').innerText.replace('$',''));
             let n = curItem.n;
@@ -424,7 +411,6 @@
 
             document.getElementById('btn-submit').innerText = '傳送中...';
             
-            // 使用 push 將訂單寫入 Firebase
             database.ref('orders').push({
                 customer: name, 
                 table: table || "外帶", 
