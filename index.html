@@ -21,9 +21,14 @@
         
         <header class="bg-orange-500 text-white p-4 shrink-0 shadow-md flex justify-between items-center z-20">
             <div><h1 class="text-xl font-black italic">美天早餐</h1><p class="text-xs text-orange-100">新北市土城區延吉街53號</p></div>
-            <button onclick="toggleCart()" class="bg-white text-orange-600 px-4 py-2 rounded-full font-black shadow-lg flex items-center gap-2">
-                🛒 <span id="cart-count" class="bg-red-500 text-white px-2 py-0.5 rounded-full text-sm">0</span>
-            </button>
+            <div class="flex gap-2">
+                <button onclick="toggleHistory()" class="bg-orange-700 text-white px-3 py-2 rounded-full font-bold shadow-lg flex items-center gap-1 text-sm">
+                    📄 紀錄
+                </button>
+                <button onclick="toggleCart()" class="bg-white text-orange-600 px-4 py-2 rounded-full font-black shadow-lg flex items-center gap-2">
+                    🛒 <span id="cart-count" class="bg-red-500 text-white px-2 py-0.5 rounded-full text-sm">0</span>
+                </button>
+            </div>
         </header>
 
         <div id="nav-bar" class="flex overflow-x-auto p-2 bg-white gap-3 hide-scrollbar shrink-0 border-b sticky top-0 z-10 whitespace-nowrap shadow-sm"></div>
@@ -68,10 +73,21 @@
                 </div>
             </div>
         </div>
+
+        <div id="history-drawer" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-end">
+            <div class="bg-white rounded-t-3xl w-full max-w-md mx-auto h-[80vh] flex flex-col modal-enter">
+                <div class="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-3xl">
+                    <h2 class="text-xl font-black text-gray-800">📄 我的點餐紀錄</h2>
+                    <button onclick="toggleHistory()" class="bg-gray-200 text-gray-600 w-8 h-8 rounded-full font-bold">✕</button>
+                </div>
+                <div id="history-items" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-100"></div>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        // === 🔑 這裡是我上次漏掉的關鍵：連接您的真實資料庫！ ===
+        // === 資料庫鑰匙設定 ===
         const firebaseConfig = {
             apiKey: "AIzaSyBg6_9BpcXndrwKL0l1jcp5kYdk8qza-4Q",
             databaseURL: "https://test-7c0ce-default-rtdb.firebaseio.com",
@@ -181,6 +197,7 @@
             document.querySelectorAll('section').forEach(sec => observer.observe(sec));
         }
 
+        // === 3. 動態客製化選項 ===
         function openModal(item, type) {
             curItem = item; curItem.type = type;
             basePrice = item.p || (type === 'drink' ? item.pm : 0);
@@ -338,6 +355,7 @@
             document.getElementById('modal-price-display').innerText = '$' + total;
         }
 
+        // === 4. 購物車與歷史紀錄邏輯 ===
         function addToCart() {
             let p = parseInt(document.getElementById('modal-price-display').innerText.replace('$',''));
             let n = curItem.n;
@@ -398,11 +416,48 @@
         }
 
         function removeCart(idx) { cart.splice(idx, 1); updateCart(); }
+        
         function toggleCart() {
             const d = document.getElementById('cart-drawer');
             d.classList.contains('hidden') ? (d.classList.remove('hidden'), d.classList.add('flex')) : (d.classList.add('hidden'), d.classList.remove('flex'));
         }
 
+        // --- 新增：歷史紀錄功能 ---
+        function toggleHistory() {
+            const d = document.getElementById('history-drawer');
+            if (d.classList.contains('hidden')) {
+                renderHistory();
+                d.classList.remove('hidden'); d.classList.add('flex');
+            } else {
+                d.classList.add('hidden'); d.classList.remove('flex');
+            }
+        }
+
+        function renderHistory() {
+            // 從手機瀏覽器抓取專屬紀錄
+            let myOrders = JSON.parse(localStorage.getItem('meitian_history') || '[]');
+            const cDiv = document.getElementById('history-items');
+            if(myOrders.length === 0) {
+                cDiv.innerHTML = '<div class="text-center text-gray-400 mt-10 font-bold">您還沒有點餐紀錄喔！</div>';
+                return;
+            }
+            
+            let html = '';
+            myOrders.forEach(order => {
+                let itemsHtml = order.items.map(i => `<div class="text-sm text-gray-700">${i.n} ${i.d ? `<span class="text-xs text-orange-500 font-bold ml-1">(${i.d})</span>` : ''}</div>`).join('');
+                html += `
+                    <div class="bg-white p-4 rounded-xl border shadow-sm">
+                        <div class="flex justify-between items-center border-b pb-2 mb-2">
+                            <span class="text-xs text-gray-500">${order.time}</span>
+                            <span class="font-black text-orange-600">$${order.total}</span>
+                        </div>
+                        <div class="space-y-1">${itemsHtml}</div>
+                    </div>`;
+            });
+            cDiv.innerHTML = html;
+        }
+
+        // === 5. 送出訂單與儲存紀錄 ===
         function submitOrder() {
             const name = document.getElementById('order-name').value;
             const table = document.getElementById('order-table').value;
@@ -411,14 +466,23 @@
 
             document.getElementById('btn-submit').innerText = '傳送中...';
             
+            let totalAmt = parseInt(document.getElementById('cart-total').innerText);
+            let currentTime = new Date().toLocaleString();
+
             database.ref('orders').push({
                 customer: name, 
                 table: table || "外帶", 
                 items: cart,
-                total: parseInt(document.getElementById('cart-total').innerText),
-                time: new Date().toLocaleString(),
+                total: totalAmt,
+                time: currentTime,
                 status: "新訂單"
             }).then(() => {
+                // 成功寫入資料庫後，把這筆訂單存在「這台手機」裡
+                let myOrders = JSON.parse(localStorage.getItem('meitian_history') || '[]');
+                myOrders.unshift({ time: currentTime, total: totalAmt, items: cart }); // 放在最上面
+                if(myOrders.length > 15) myOrders.pop(); // 最多存最近 15 筆，避免手機空間佔用
+                localStorage.setItem('meitian_history', JSON.stringify(myOrders));
+
                 alert("🎉 訂單成功送出給煎台阿姨囉！");
                 location.reload();
             }).catch((error) => {
