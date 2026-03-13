@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>美天早餐 - 老闆接單後台</title>
+    <title>美天早餐 - 專業接單後台 (進度追蹤版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -11,15 +11,32 @@
         /* 💡 新訂單閃爍效果，提醒老闆接單 */
         @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
         .new-order-flash { animation: pulse-red 1.5s infinite; border-color: #ef4444 !important; border-width: 4px; }
+        
+        /* 💡 可取餐閃爍效果，提醒老闆結單 */
+        .ready-flash { animation: pulse-green 1.5s infinite; }
+        @keyframes pulse-green { 0% { transform: scale(1); } 50% { transform: scale(1.02); background-color: #16a34a; } 100% { transform: scale(1); } }
+
+        /* 🖨️ 列印預留區 (未來給飛鵝雲端排版參考用) */
+        @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; color: black !important; }
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-white min-h-screen font-sans" onclick="enableAudio()">
+    <div id="print-area" class="hidden text-black p-4" style="width: 58mm; font-family: sans-serif;">
+        <h2 style="font-size: 22px; border-bottom: 2px solid black;">#<span id="p-no"></span> <span id="p-method"></span></h2>
+        <p id="p-time" style="font-size: 18px; font-weight: bold; margin: 5px 0;"></p>
+        <div id="p-items" style="border-top: 1px dashed black; padding-top: 5px;"></div>
+    </div>
+
     <div class="max-w-6xl mx-auto p-4 lg:p-8">
         <header class="flex justify-between items-end mb-8 border-b border-slate-700 pb-6">
             <div>
                 <h1 class="text-3xl font-black text-orange-500 mb-2">美天早餐 接單系統</h1>
                 <p id="today-date-display" class="text-slate-400 font-bold text-lg"></p>
-                <p id="audio-status" class="text-red-500 text-xs font-bold mt-1 tracking-widest">⚠️ 請點擊畫面任何處以啟用鈴聲</p>
+                <p id="audio-status" class="text-red-500 text-xs font-bold mt-1 tracking-widest">⚠️ 請點擊畫面任何處以啟用訂單鈴聲</p>
             </div>
             <div class="text-right">
                 <p class="text-slate-400 text-sm mb-1 uppercase tracking-widest">今日總營收</p>
@@ -44,7 +61,6 @@
         const tY = now.getFullYear(); const tM = now.getMonth() + 1; const tD = now.getDate();
         document.getElementById('today-date-display').innerText = `${tY}/${tM}/${tD} (週${"日一二三四五六"[now.getDay()]})`;
 
-        // 🟢 解鎖瀏覽器聲音限制
         function enableAudio() {
             if (!isAudioEnabled) {
                 isAudioEnabled = true;
@@ -62,7 +78,7 @@
             container.innerHTML = '';
             let totalRevenue = 0;
             let pendingOrders = [];
-            let hasNewOrder = false; // 是否有尚未接單的新單
+            let hasNewOrder = false;
 
             snapshot.forEach((child) => {
                 const data = child.val(); data.key = child.key;
@@ -78,7 +94,7 @@
                 }
             });
 
-            // 🎵 鈴聲邏輯
+            // 🎵 鈴聲只有新訂單才會響
             const audio = document.getElementById('notif-sound');
             if (isAudioEnabled && hasNewOrder) {
                 audio.play().catch(()=>{});
@@ -87,16 +103,19 @@
                 audio.currentTime = 0;
             }
 
+            // 排序：預計取餐時間早的排前面
             pendingOrders.sort((a, b) => (a.pickupTime || "").localeCompare(b.pickupTime || ""));
             
             if (pendingOrders.length === 0) { 
-                container.innerHTML = '<div class="text-center py-20 col-span-full text-slate-500 font-bold text-xl">☕ 目前沒有新訂單</div>'; 
+                container.innerHTML = '<div class="text-center py-20 col-span-full text-slate-500 font-bold text-xl">☕ 目前沒有未完成的訂單</div>'; 
             }
 
             pendingOrders.forEach(order => {
                 const isNew = order.status === "新訂單";
+                const isMaking = order.status === "製作中";
+                const isReady = order.status === "可取餐";
                 
-                // 🛠️ 這裡增加了【數量 (q)】的強烈視覺顯示
+                // 餐點清單 (包含顯眼的數量顯示)
                 const itemsHtml = order.items.map(i => `
                     <div class="flex justify-between py-2 border-b border-slate-700/50">
                         <div class="flex-1">
@@ -111,7 +130,7 @@
                 `).join('');
 
                 container.innerHTML += `
-                    <div class="bg-slate-800 rounded-3xl p-6 shadow-2xl border-2 ${isNew ? 'new-order-flash' : (order.method === '內用' ? 'border-blue-500' : 'border-orange-500')} flex flex-col">
+                    <div class="bg-slate-800 rounded-3xl p-6 shadow-2xl border-2 ${isNew ? 'new-order-flash' : (order.method === '內用' ? 'border-blue-500' : 'border-orange-500')} flex flex-col transition-all">
                         <div class="flex justify-between items-start mb-4">
                             <div>
                                 <span class="text-4xl font-black text-white mr-2">#${order.orderNo}</span>
@@ -128,26 +147,25 @@
                             ${order.table ? `<p class="text-lg font-bold text-blue-400 mt-2 bg-blue-900/30 px-3 py-1 rounded-lg inline-block">📍 桌號: ${order.table}</p>` : ''}
                         </div>
                         <div class="flex-1 mb-6">${itemsHtml}</div>
-                        <div class="flex gap-3 items-center mt-auto pt-4 border-t border-slate-700">
-                            <p class="text-3xl font-black text-green-400 flex-1">$${order.total}</p>
-                            ${isNew ? 
-                                `<button onclick="acceptOrder('${order.key}')" class="bg-red-500 text-white font-black px-6 py-4 rounded-2xl shadow-xl animate-bounce">接單 (停鈴聲)</button>` : 
-                                `<button onclick="markDone('${order.key}')" class="bg-green-500 text-slate-900 font-black px-10 py-4 rounded-2xl shadow-xl">完成</button>`
-                            }
+                        <div class="flex items-center gap-4 mt-auto pt-4 border-t border-slate-700">
+                            <p class="text-3xl font-black text-green-400">$${order.total}</p>
+                            <div class="flex-1">
+                                ${isNew ? 
+                                    `<button onclick="updateStatus('${order.key}', '製作中')" class="w-full bg-red-500 text-white font-black py-4 rounded-xl shadow-xl animate-pulse text-lg">1. 接受訂單 (停鈴聲)</button>` : 
+                                    (isMaking ? 
+                                        `<button onclick="updateStatus('${order.key}', '可取餐')" class="w-full bg-blue-500 text-white font-black py-4 rounded-xl shadow-xl text-lg">2. 通知取餐 (震動提醒)</button>` :
+                                        `<button onclick="updateStatus('${order.key}', '已完成')" class="w-full bg-green-500 text-slate-900 font-black py-4 rounded-xl shadow-xl ready-flash text-lg">3. 完成結單</button>`)
+                                }
+                            </div>
                         </div>
                     </div>`;
             });
             document.getElementById('daily-total').innerText = totalRevenue;
         });
 
-        // 接受訂單：將狀態改為「製作中」，鈴聲會停止
-        function acceptOrder(key) {
-            database.ref('orders/' + key).update({ status: "製作中" });
-        }
-
-        // 完成單據：將狀態改為「已完成」，單據從畫面上消失
-        function markDone(key) { 
-            database.ref('orders/' + key).update({ status: "已完成" }); 
+        // 🟢 通用狀態更新函數
+        function updateStatus(key, newStatus) {
+            database.ref('orders/' + key).update({ status: newStatus });
         }
     </script>
 </body>

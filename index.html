@@ -30,11 +30,30 @@
         .opt-radio + div { color: #4b5563; }
         .opt-radio:checked + div { background-color: #fff7ed; border-color: #ea580c; color: #ea580c !important; font-weight: bold; }
         .opt-checkbox:checked + div { background-color: #fff7ed; border-color: #ea580c; color: #ea580c !important; font-weight: bold; }
+        
+        /* 💡 狀態進度條動畫 */
+        .progress-step { transition: all 0.5s ease-in-out; }
+        .progress-active { color: #ea580c !important; transform: scale(1.15); opacity: 1 !important; }
     </style>
 </head>
 <body class="bg-gray-50 flex justify-center h-screen overflow-hidden text-gray-800 font-sans">
     <div class="w-full max-w-md bg-white h-full flex flex-col relative shadow-2xl border-x">
         
+        <div id="order-tracking-bar" class="hidden bg-slate-900 text-white p-4 shrink-0 shadow-lg border-b-4 border-orange-500 z-30 transition-all">
+            <div class="flex justify-between items-center mb-4">
+                <span class="font-black text-orange-500 text-lg">您的餐點進度</span>
+                <span id="track-order-no" class="bg-white text-slate-900 px-3 py-1 rounded-lg font-black text-sm">#000</span>
+            </div>
+            <div class="flex justify-between text-xs font-bold mb-2 relative">
+                <div id="step-1" class="z-10 text-center opacity-40 progress-step">●<br>已送單</div>
+                <div id="step-2" class="z-10 text-center opacity-40 progress-step">●<br>製作中</div>
+                <div id="step-3" class="z-10 text-center opacity-40 progress-step">●<br>可取餐</div>
+                <div class="absolute top-1.5 left-4 right-4 h-0.5 bg-slate-700 -z-0"></div>
+                <div id="progress-line" class="absolute top-1.5 left-4 h-0.5 bg-orange-500 transition-all duration-500 w-0 z-0"></div>
+            </div>
+            <p id="track-message" class="text-center text-xs text-slate-400 mt-2 font-bold animate-pulse">正在等待店家確認訂單...</p>
+        </div>
+
         <header class="bg-orange-500 text-white px-4 py-5 shrink-0 shadow-lg z-20">
             <div class="flex justify-between items-center">
                 <div class="flex-1 mr-2 text-white">
@@ -123,7 +142,7 @@
         <div id="history-drawer" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-end text-gray-800">
             <div class="bg-white rounded-t-3xl w-full max-w-md mx-auto h-[80vh] flex flex-col modal-enter shadow-2xl">
                 <div class="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-3xl shrink-0">
-                    <h2 class="text-xl font-black">📄 我的點餐紀錄</h2>
+                    <h2 class="text-xl font-black">📄 我的歷史紀錄</h2>
                     <button onclick="toggleHistory()" class="bg-gray-200 text-gray-600 w-8 h-8 rounded-full font-bold">✕</button>
                 </div>
                 <div id="history-items" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-100"></div>
@@ -137,7 +156,60 @@
         const database = firebase.database();
 
         let cart = []; let curItem = null; let basePrice = 0; let userMethod = "外帶"; let userTable = ""; let userTime = ""; let editingIndex = -1;
-        let curModalQty = 1; // 🛠️ 當前選中數量
+        let curModalQty = 1;
+
+        // 💡 頁面載入時，檢查是否有正在進行中的訂單
+        function checkActiveOrder() {
+            const activeOrderId = localStorage.getItem('meitian_active_order');
+            if (activeOrderId) {
+                trackLiveOrder(activeOrderId);
+            }
+        }
+
+        // 💡 Firebase 即時追蹤邏輯
+        function trackLiveOrder(orderId) {
+            const trackBar = document.getElementById('order-tracking-bar');
+            database.ref('orders/' + orderId).on('value', (snap) => {
+                const data = snap.val();
+                if (!data) { 
+                    trackBar.classList.add('hidden'); 
+                    localStorage.removeItem('meitian_active_order');
+                    return; 
+                }
+                
+                // 如果已完成，隱藏進度條並清除追蹤
+                if (data.status === "已完成") {
+                    trackBar.classList.add('hidden');
+                    localStorage.removeItem('meitian_active_order');
+                    alert("✅ 您的餐點已完成，感謝您的購買！");
+                    return;
+                }
+
+                trackBar.classList.remove('hidden');
+                document.getElementById('track-order-no').innerText = '#' + data.orderNo;
+                
+                let step = 1; let msg = "正在等待店家確認訂單...";
+                if (data.status === "製作中") { step = 2; msg = "👨‍🍳 店家已接單，正在為您製作中！"; }
+                if (data.status === "可取餐") { step = 3; msg = "🔔 餐點好囉！請前往取餐/入座"; }
+                
+                // UI 動畫更新
+                document.getElementById('track-message').innerText = msg;
+                document.getElementById('track-message').className = `text-center text-xs mt-2 font-bold ${step === 3 ? 'text-green-400 animate-bounce' : 'text-slate-400'}`;
+                
+                ["step-1", "step-2", "step-3"].forEach((s, idx) => {
+                    const el = document.getElementById(s);
+                    if (idx < step) { el.classList.remove('opacity-40'); el.classList.add('progress-active'); }
+                    else { el.classList.add('opacity-40'); el.classList.remove('progress-active'); }
+                });
+                
+                document.getElementById('progress-line').style.width = ((step-1)/2 * 90) + '%';
+                
+                // 取餐震動提醒
+                if (step === 3 && "vibrate" in navigator) {
+                    navigator.vibrate([200, 100, 200, 100, 200]);
+                }
+            });
+        }
 
         function checkStoreStatus() {
             const now = new Date();
@@ -180,6 +252,8 @@
         ];
 
         function init() {
+            checkActiveOrder(); // 💡 載入時檢查進度
+            
             const slots = generateTimeSlots(15); if (!checkStoreStatus()) return;
             document.getElementById('setup-time').innerHTML = slots.map(t => `<option value="${t}">${t}</option>`).join('');
             document.getElementById('welcome-modal').classList.remove('hidden'); document.getElementById('welcome-modal').classList.add('flex');
@@ -206,7 +280,7 @@
         function openModal(item, type) {
             editingIndex = -1; document.getElementById('add-to-cart-btn').innerText = "確認加入購物車";
             curItem = item; curItem.type = type; basePrice = item.p || (type === 'drink' ? item.pm : 0);
-            curModalQty = 1; document.getElementById('modal-qty').innerText = curModalQty; // 🛠️ 重置數量
+            curModalQty = 1; document.getElementById('modal-qty').innerText = curModalQty; 
             document.getElementById('modal-title').innerText = item.n; document.getElementById('modal-note').value = '';
             const dyn = document.getElementById('modal-dynamic-options'); dyn.innerHTML = '';
             const radio = (grp, val, label, checked, price=0) => `<label class="flex-1 cursor-pointer"><input type="radio" name="${grp}" value="${val}|${price}" ${checked?'checked':''} class="hidden opt-radio" onchange="calcPrice()"><div class="border-2 p-3 rounded-xl text-center font-bold transition-colors">${label} ${price!=0 ? (price>0?'+'+price:price) : ''}</div></label>`;
@@ -243,7 +317,6 @@
             dyn.scrollTop = 0; setTimeout(calcPrice, 10);
         }
 
-        // 🛠️ 修改數量函式
         function changeModalQty(val) {
             curModalQty = Math.max(1, curModalQty + val);
             document.getElementById('modal-qty').innerText = curModalQty;
@@ -251,7 +324,7 @@
         }
 
         function addToCart() {
-            let p = parseInt(document.getElementById('modal-price-display').innerText.replace('$','')) / curModalQty; // 單價
+            let p = parseInt(document.getElementById('modal-price-display').innerText.replace('$','')) / curModalQty; 
             let n = curItem.n; let details = []; let rawState = { radios: {}, checks: [], selects: {} };
             document.querySelectorAll('#modal-dynamic-options input[type="radio"]:checked').forEach(r => {
                 let val = r.value.split('|')[0]; rawState.radios[r.name] = r.value;
@@ -280,11 +353,19 @@
                 if (comm) {
                     const orderNo = String(snap.val()).padStart(3, '0');
                     let orderData = { orderNo, customer: name, phone, method: userMethod, table: userTable, pickupTime: finalTime, items: cart, total: parseInt(document.getElementById('cart-total').innerText), time: now.toLocaleString('zh-TW'), status: "新訂單" };
-                    database.ref('orders').push(orderData).then(() => {
+                    
+                    // 💡 送出並獲取這筆訂單的專屬 ID
+                    const newOrderRef = database.ref('orders').push();
+                    newOrderRef.set(orderData).then(() => {
                         let myOrders = JSON.parse(localStorage.getItem('meitian_history') || '[]');
-                        myOrders.unshift({ orderNo, method: userMethod, time: orderData.pickupTime, total: orderData.total, items: cart });
+                        myOrders.unshift({ orderNo, method: userMethod, time: orderData.pickupTime, total: orderData.total, items: cart, status: "新訂單" });
                         localStorage.setItem('meitian_history', JSON.stringify(myOrders.slice(0,10)));
-                        alert(`🎉 訂單已送出！單號：#${orderNo}`); location.reload();
+                        
+                        // 💡 儲存此訂單 ID 到手機，準備追蹤
+                        localStorage.setItem('meitian_active_order', newOrderRef.key);
+                        
+                        alert(`🎉 訂單已送出！單號：#${orderNo}\n您可以在網頁頂端追蹤進度喔！`); 
+                        location.reload(); // 重新整理後會自動觸發 checkActiveOrder()
                     });
                 }
             });
@@ -325,11 +406,7 @@
             document.getElementById('cart-total').innerText = t;
         }
 
-        function changeCartQty(idx, val) {
-            cart[idx].q = Math.max(1, cart[idx].q + val);
-            updateCart();
-        }
-
+        function changeCartQty(idx, val) { cart[idx].q = Math.max(1, cart[idx].q + val); updateCart(); }
         function editCart(idx) { let itm = cart[idx]; toggleCart(); openModal(itm.baseItem, itm.type); editingIndex = idx; curModalQty = itm.q; document.getElementById('modal-qty').innerText = curModalQty; document.getElementById('add-to-cart-btn').innerText = "💾 儲存修改"; }
         function removeCart(idx) { cart.splice(idx, 1); updateCart(); }
         function calcPrice() { let total = basePrice; document.querySelectorAll('#modal-dynamic-options input[type="radio"]:checked').forEach(r => total += parseInt(r.value.split('|')[1]||0)); document.querySelectorAll('#modal-dynamic-options input[type="checkbox"]:checked').forEach(c => total += parseInt(c.value.split('|')[1]||0)); let comboDrink = document.getElementById('combo-drink'); if (comboDrink) total += parseInt(comboDrink.value.split('|')[1]||0); document.getElementById('modal-price-display').innerText = '$' + (total * curModalQty); }
@@ -344,7 +421,8 @@
             const hDiv = document.getElementById('history-items');
             if(myOrders.length === 0) { hDiv.innerHTML = '<p class="text-center text-gray-400 mt-10">目前無紀錄</p>'; return; }
             hDiv.innerHTML = myOrders.map(o => `
-                <div class="bg-white p-4 rounded-xl border shadow-sm">
+                <div class="bg-white p-4 rounded-xl border shadow-sm relative overflow-hidden">
+                    ${o.status === '新訂單' ? '<div class="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg animate-pulse">處理中</div>' : ''}
                     <div class="flex justify-between border-b pb-2 mb-2">
                         <span class="font-black text-red-500">#${o.orderNo}</span>
                         <span class="font-bold text-orange-600">${o.time}</span>
