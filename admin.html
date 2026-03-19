@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>美天早餐 - 接單與自動印單系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        .new-order-flash { animation: pulse-red 1.5s infinite; border-color: #ef4444 !important; border-width: 4px; }
+        .ready-flash { animation: pulse-green 1.5s infinite; }
+        @keyframes pulse-green { 0% { transform: scale(1); } 50% { transform: scale(1.02); background-color: #16a34a; } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen font-sans" onclick="enableAudio()">
+    <div class="max-w-6xl mx-auto p-4 lg:p-8">
+        <header class="flex justify-between items-end mb-8 border-b border-slate-700 pb-6">
+            <div>
+                <h1 class="text-3xl font-black text-orange-500 mb-2">美天早餐 接單系統 🖨️</h1>
+                <p id="today-date-display" class="text-slate-400 font-bold text-lg"></p>
+                <p id="audio-status" class="text-red-500 text-xs font-bold mt-1 tracking-widest">⚠️ 請點擊畫面任何處以啟用訂單鈴聲</p>
+            </div>
+            <div class="text-right">
+                <p class="text-slate-400 text-sm mb-1 uppercase tracking-widest">今日總營收</p>
+                <p class="text-5xl font-black text-green-400 leading-none">$<span id="daily-total">0</span></p>
+            </div>
+        </header>
+
+        <div id="order-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div class="text-center py-20 col-span-full text-slate-600 font-bold text-xl tracking-widest animate-pulse">讀取訂單中...</div>
+        </div>
+    </div>
+
+    <audio id="notif-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" loop></audio>
+
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyBg6_9BpcXndrwKL0l1jcp5kYdk8qza-4Q", databaseURL: "https://test-7c0ce-default-rtdb.firebaseio.com", projectId: "test-7c0ce", appId: "1:125105855985:web:f4dbef66a2b7df788ff850" };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let isAudioEnabled = false;
+        let orderMap = {}; // 用來儲存完整的訂單資料，方便印表機抓取
+        const now = new Date();
+        const tY = now.getFullYear(); const tM = now.getMonth() + 1; const tD = now.getDate();
+        document.getElementById('today-date-display').innerText = `${tY}/${tM}/${tD} (週${"日一二三四五六"[now.getDay()]})`;
+
+        function enableAudio() {
+            if (!isAudioEnabled) {
+                isAudioEnabled = true;
+                const audio = document.getElementById('notif-sound');
+                audio.play().then(() => { audio.pause(); document.getElementById('audio-status').innerText = "✅ 鈴聲監控中"; document.getElementById('audio-status').className = "text-green-500 text-xs font-bold mt-1"; });
+            }
+        }
+
+        database.ref('orders').on('value', (snapshot) => {
+            const container = document.getElementById('order-container');
+            container.innerHTML = ''; let totalRevenue = 0; let pendingOrders = []; let hasNewOrder = false;
+            orderMap = {}; // 重新整理資料
+
+            snapshot.forEach((child) => {
+                const data = child.val(); data.key = child.key;
+                orderMap[data.key] = data; // 存入字典
+                const orderTime = data.time || "";
+                const isToday = orderTime.includes(`${tY}/${tM}/${tD}`) || orderTime.includes(`${tY}/${String(tM).padStart(2,'0')}/${String(tD).padStart(2,'0')}`);
+                
+                if (data.status !== "已完成") { 
+                    pendingOrders.push(data);
+                    if (data.status === "新訂單") hasNewOrder = true;
+                } 
+                else if (isToday) { totalRevenue += (data.total || 0); }
+            });
+
+            const audio = document.getElementById('notif-sound');
+            if (isAudioEnabled && hasNewOrder) audio.play().catch(()=>{}); else { audio.pause(); audio.currentTime = 0; }
+
+            pendingOrders.sort((a, b) => (a.pickupTime || "").localeCompare(b.pickupTime || ""));
+            
+            if (pendingOrders.length === 0) container.innerHTML = '<div class="text-center py-20 col-span-full text-slate-500 font-bold text-xl">☕ 目前沒有未完成的訂單</div>'; 
+
+            pendingOrders.forEach(order => {
+                const isNew = order.status === "新訂單";
+                const isMaking = order.status === "製作中";
+                const isReady = order.status === "可取餐";
+                
+                const itemsHtml = order.items.map(i => `
+                    <div class="flex justify-between py-2 border-b border-slate-700/50">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2">
+                                <span class="bg-orange-500 text-slate-900 px-2 py-0.5 rounded font-black text-xl">x${i.q || 1}</span>
+                                <p class="font-black text-2xl text-white">${i.n}</p>
+                            </div>
+                            <p class="text-sm text-orange-400 font-bold ml-12">${i.d || ''}</p>
+                        </div>
+                        <p class="font-bold text-slate-300 ml-4">$${(i.p * (i.q || 1))}</p>
+                    </div>
+                `).join('');
+
+                container.innerHTML += `
+                    <div class="bg-slate-800 rounded-3xl p-6 shadow-2xl border-2 ${isNew ? 'new-order-flash' : (order.method === '內用' ? 'border-blue-500' : 'border-orange-500')} flex flex-col transition-all">
+                        <div class="flex justify-between items-start mb-4">
+                            <div><span class="text-4xl font-black text-white mr-2">#${order.orderNo}</span><span class="px-3 py-1 rounded-full text-xs font-black ${order.method === '內用' ? 'bg-blue-600' : 'bg-orange-600'}">${order.method}</span></div>
+                            <div class="text-right"><p class="text-slate-400 text-[10px] font-bold">預計取餐</p><p class="text-3xl font-black text-orange-500 leading-tight">${order.pickupTime}</p></div>
+                        </div>
+                        <div class="mb-4">
+                            <p class="text-xl font-black text-white">👤 ${order.customer}</p>
+                            <p class="text-slate-400 font-bold">${order.phone}</p>
+                            ${order.table ? `<p class="text-lg font-bold text-blue-400 mt-2 bg-blue-900/30 px-3 py-1 rounded-lg inline-block">📍 桌號: ${order.table}</p>` : ''}
+                        </div>
+                        <div class="flex-1 mb-6">${itemsHtml}</div>
+                        <div class="flex items-center gap-4 mt-auto pt-4 border-t border-slate-700">
+                            <p class="text-3xl font-black text-green-400">$${order.total}</p>
+                            <div class="flex-1">
+                                ${isNew ? `<button onclick="acceptOrderAndPrint('${order.key}')" class="w-full bg-red-500 text-white font-black py-4 rounded-xl shadow-xl animate-pulse text-lg">1. 接受訂單 + 自動印單 🖨️</button>` : 
+                                 (isMaking ? `<button onclick="updateStatus('${order.key}', '可取餐')" class="w-full bg-blue-500 text-white font-black py-4 rounded-xl shadow-xl text-lg">2. 通知客人取餐</button>` :
+                                 `<button onclick="updateStatus('${order.key}', '已完成')" class="w-full bg-green-500 text-slate-900 font-black py-4 rounded-xl shadow-xl ready-flash text-lg">3. 完成結單</button>`)}
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            document.getElementById('daily-total').innerText = totalRevenue;
+        });
+
+        // 🟢 單純更新狀態的函數
+        function updateStatus(key, newStatus) {
+            database.ref('orders/' + key).update({ status: newStatus });
+        }
+
+        // 🖨️ 接單 + 自動列印的魔法函數
+        async function acceptOrderAndPrint(key) {
+            // 1. 先把 Firebase 上的狀態改成「製作中」，這樣鈴聲就會停
+            updateStatus(key, '製作中');
+
+            // 2. 獲取這筆訂單的詳細資料
+            const order = orderMap[key];
+            if (!order) return;
+
+            // 3. 設定飛鵝雲 API 參數 (老闆的專屬鑰匙)
+            const USER = "betty9387@ymail.com";
+            const UKEY = "bfMbcQQkYVuq5ykM";
+            const SN = "924755630";
+            const STIME = Math.floor(Date.now() / 1000).toString(); // 當下時間戳
+
+            // 4. SHA-1 加密計算 (這是飛鵝要求的安全認證)
+            const encoder = new TextEncoder();
+            const data = encoder.encode(USER + UKEY + STIME);
+            const hashBuffer = await crypto.subtle.digest('SHA-1', data);
+            const SIG = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+            // 5. 撰寫「飛鵝專用」排版語法 (印出來字很大、很清楚)
+            let content = `<CB>美天早餐</CB><BR>`;
+            content += `<CB>#${order.orderNo}</CB><BR>`;
+            content += `<C>-- ${order.method} --</C><BR><BR>`;
+            content += `預計取餐：<B>${order.pickupTime}</B><BR>`;
+            content += `客戶：${order.customer} / ${order.phone}<BR>`;
+            if(order.table) content += `桌號：<B>${order.table}</B><BR>`;
+            content += `--------------------------------<BR>`;
+            
+            // 把餐點跟備註列出來
+            order.items.forEach(item => {
+                content += `<B>x${item.q || 1} ${item.n}</B><BR>`;
+                if (item.d) content += `  (${item.d})<BR>`;
+            });
+            
+            content += `--------------------------------<BR>`;
+            content += `<R>總計金額：$${order.total}</R><BR><BR><BR><BR>`; // 留空讓撕紙更方便
+
+            // 6. 準備發送給印表機
+            const params = new URLSearchParams();
+            params.append('user', USER);
+            params.append('stime', STIME);
+            params.append('sig', SIG);
+            params.append('apiname', 'Open_printMsg');
+            params.append('sn', SN);
+            params.append('content', content);
+            params.append('times', '1');
+
+            // 7. 直接呼叫飛鵝雲端
+            fetch("https://api.feieyun.cn/Api/Open/", {
+                method: 'POST',
+                mode: 'no-cors', // 允許跨域直接傳送指令
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString()
+            }).then(() => {
+                console.log("列印指令已送出！");
+            }).catch(err => {
+                console.error("印表機連線可能有問題：", err);
+            });
+        }
+    </script>
+</body>
+</html>
