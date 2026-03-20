@@ -135,15 +135,11 @@
             const UKEY = "bfMbcQQkYVuq5ykM";
             const RECEIPT_SN = "924755630"; // 🖨️ 廚房出單機
             const LABEL_SN = "960299581";   // 🏷️ 標籤貼紙機
-            const STIME = Math.floor(Date.now() / 1000).toString();
-
+            
             const encoder = new TextEncoder();
-            const data = encoder.encode(USER + UKEY + STIME);
-            const hashBuffer = await crypto.subtle.digest('SHA-1', data);
-            const SIG = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 
             // ========================================================
-            // 🖨️ 任務一：發送給「廚房出單機」 (完美排版)
+            // 🖨️ 任務一：發送給「廚房出單機」
             // ========================================================
             let oTime = new Date(order.time);
             let formattedOrderTime = order.time; 
@@ -166,7 +162,7 @@
             
             let totalQty = 0; 
             order.items.forEach(item => {
-                let qty = item.q || 1;
+                let qty = parseInt(item.q, 10) || 1;
                 let itemTotal = item.p * qty; 
                 totalQty += qty; 
                 receiptContent += `<B>x${qty} ${item.n}</B><BR>`;
@@ -177,10 +173,15 @@
             receiptContent += `<RIGHT>總共：${totalQty} 份餐點</RIGHT><BR>`;
             receiptContent += `<RIGHT><B>總計：$${order.total}</B></RIGHT><BR><BR><BR><BR>`;
 
+            const STIME_REC = Math.floor(Date.now() / 1000).toString();
+            const dataRec = encoder.encode(USER + UKEY + STIME_REC);
+            const hashBufferRec = await crypto.subtle.digest('SHA-1', dataRec);
+            const SIG_REC = Array.from(new Uint8Array(hashBufferRec)).map(b => b.toString(16).padStart(2, '0')).join('');
+
             const receiptParams = new URLSearchParams();
             receiptParams.append('user', USER);
-            receiptParams.append('stime', STIME);
-            receiptParams.append('sig', SIG);
+            receiptParams.append('stime', STIME_REC);
+            receiptParams.append('sig', SIG_REC);
             receiptParams.append('apiname', 'Open_printMsg'); 
             receiptParams.append('sn', RECEIPT_SN);
             receiptParams.append('content', receiptContent);
@@ -189,52 +190,65 @@
             fetch("https://api.feieyun.cn/Api/Open/", { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: receiptParams.toString() });
 
             // ========================================================
-            // 🏷️ 任務二：發送給「標籤貼紙機」 (40x30mm 黃金比例版)
+            // 🏷️ 任務二：發送給「標籤貼紙機」 (強制一張一張獨立發送)
             // ========================================================
-            // 💡 尺寸指令放最外面，告訴機器這是 40x30 的貼紙
-            let labelContent = `<SIZE>40,30</SIZE><DIRECTION>1</DIRECTION>`;
+            let labelJobs = [];
 
+            // 把所有的貼紙先存進一個陣列裡排隊
             order.items.forEach(item => {
-                let qty = item.q || 1;
+                let qty = parseInt(item.q, 10) || 1;
                 for(let i = 1; i <= qty; i++) {
-                    labelContent += `<PAGE>`; 
+                    // 💡 每張貼紙都是一個「完整獨立」的指令，保證絕不互相干擾！
+                    let singleLabel = `<SIZE>40,30</SIZE><DIRECTION>1</DIRECTION><PAGE>`; 
                     
-                    // 1️⃣ 單號 (放大兩倍，Y座標=15)
-                    labelContent += `<TEXT x="15" y="15" font="TSS24.BF2" w="2" h="2" r="0">#${order.orderNo}</TEXT>`; 
+                    singleLabel += `<TEXT x="15" y="15" font="TSS24.BF2" w="2" h="2" r="0">#${order.orderNo}</TEXT>`; 
                     
-                    // 2️⃣ 品名 (限制最多12個字防超框，Y座標=75)
                     let safeName = item.n.length > 12 ? item.n.substring(0, 12) : item.n;
-                    labelContent += `<TEXT x="15" y="75" font="TSS24.BF2" w="1" h="1" r="0">${safeName}</TEXT>`;        
+                    singleLabel += `<TEXT x="15" y="75" font="TSS24.BF2" w="1" h="1" r="0">${safeName}</TEXT>`;        
                     
-                    // 3️⃣ 備註 (自動切行，Y座標=110)
                     if (item.d) {
                         let remark1 = item.d.substring(0, 12);
                         let remark2 = item.d.substring(12, 24);
-                        labelContent += `<TEXT x="15" y="110" font="TSS24.BF2" w="1" h="1" r="0">${remark1}</TEXT>`;   
-                        // 如果備註太長，自動換行印第二排 (Y座標=145)
+                        singleLabel += `<TEXT x="15" y="110" font="TSS24.BF2" w="1" h="1" r="0">${remark1}</TEXT>`;   
                         if (remark2) {
-                            labelContent += `<TEXT x="15" y="145" font="TSS24.BF2" w="1" h="1" r="0">${remark2}</TEXT>`;   
+                            singleLabel += `<TEXT x="15" y="145" font="TSS24.BF2" w="1" h="1" r="0">${remark2}</TEXT>`;   
                         }
                     }
                     
-                    // 4️⃣ 底部資訊 (固定在最下方 Y座標=190，不會忽高忽低)
-                    labelContent += `<TEXT x="15" y="190" font="TSS24.BF2" w="1" h="1" r="0">${order.method} ${order.pickupTime} (${i}/${qty})</TEXT>`; 
+                    singleLabel += `<TEXT x="15" y="190" font="TSS24.BF2" w="1" h="1" r="0">${order.method} ${order.pickupTime} (${i}/${qty})</TEXT>`; 
                     
-                    labelContent += `</PAGE>`; 
+                    singleLabel += `</PAGE>`; 
+                    labelJobs.push(singleLabel);
                 }
             });
 
-            if (labelContent !== "") {
+            // 💡 暴力破解法：排隊送出！每次送一張，停頓 0.8 秒，再送下一張！
+            for (let j = 0; j < labelJobs.length; j++) {
+                let currentStime = Math.floor(Date.now() / 1000).toString();
+                let currentData = encoder.encode(USER + UKEY + currentStime);
+                let currentHash = await crypto.subtle.digest('SHA-1', currentData);
+                let currentSig = Array.from(new Uint8Array(currentHash)).map(b => b.toString(16).padStart(2, '0')).join('');
+
                 const labelParams = new URLSearchParams();
                 labelParams.append('user', USER);
-                labelParams.append('stime', STIME);
-                labelParams.append('sig', SIG);
+                labelParams.append('stime', currentStime);
+                labelParams.append('sig', currentSig);
                 labelParams.append('apiname', 'Open_printLabelMsg');
                 labelParams.append('sn', LABEL_SN);
-                labelParams.append('content', labelContent);
+                labelParams.append('content', labelJobs[j]);
                 labelParams.append('times', '1');
 
-                fetch("https://api.feieyun.cn/Api/Open/", { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: labelParams.toString() });
+                fetch("https://api.feieyun.cn/Api/Open/", { 
+                    method: 'POST', 
+                    mode: 'no-cors', 
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, 
+                    body: labelParams.toString() 
+                });
+
+                // 等待 0.8 秒，讓飛鵝雲有時間消化這張貼紙，才不會重疊
+                if (j < labelJobs.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                }
             }
         }
     </script>
