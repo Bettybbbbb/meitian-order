@@ -125,6 +125,45 @@
             database.ref('orders/' + key).update({ status: newStatus });
         }
 
+        // 🖨️ 產生標籤機指令字串的函數
+        function generateLabelStr(order, itemName, itemDesc, currentCount, totalCount) {
+            let singleLabel = `<SIZE>40,30</SIZE><DIRECTION>1</DIRECTION><PAGE>`; 
+            
+            // 💡 第一排 (Y=15)：單號 + 外帶/內用(X桌) + 進度，全擠在最上面，且高度皆為大字 (h=2)
+            singleLabel += `<TEXT x="10" y="15" font="TSS24.BF2" w="2" h="2" r="0">#${order.orderNo}</TEXT>`; 
+            
+            let methodStr = order.method === "內用" && order.table ? `內用(${order.table}桌)` : order.method;
+            let mWidth = methodStr.length > 2 ? "1" : "2"; 
+            singleLabel += `<TEXT x="115" y="15" font="TSS24.BF2" w="${mWidth}" h="2" r="0">${methodStr}</TEXT>`;
+            
+            singleLabel += `<TEXT x="230" y="15" font="TSS24.BF2" w="1" h="2" r="0">(${currentCount}/${totalCount})</TEXT>`; 
+            
+            // 💡 第二排 (Y=70)：品名，兩倍高字體
+            let nWidth = itemName.length > 6 ? "1" : "2"; 
+            singleLabel += `<TEXT x="10" y="70" font="TSS24.BF2" w="${nWidth}" h="2" r="0">${itemName}</TEXT>`;        
+            
+            // 💡 第三排以後：空間全部留給備註！
+            if (itemDesc) {
+                if (itemDesc.length > 26) {
+                    let rY = 125;
+                    for (let c = 0; c < itemDesc.length; c += 13) {
+                        if (rY > 215) break; 
+                        singleLabel += `<TEXT x="10" y="${rY}" font="TSS24.BF2" w="1" h="1" r="0">${itemDesc.substring(c, c + 13)}</TEXT>`;
+                        rY += 30;
+                    }
+                } else {
+                    let rY = 125;
+                    for (let c = 0; c < itemDesc.length; c += 13) {
+                        singleLabel += `<TEXT x="10" y="${rY}" font="TSS24.BF2" w="1" h="2" r="0">${itemDesc.substring(c, c + 13)}</TEXT>`;
+                        rY += 55;
+                    }
+                }
+            }
+            
+            singleLabel += `</PAGE>`; 
+            return singleLabel;
+        }
+
         // 🖨️ 雙機自動列印的魔法函數
         async function acceptOrderAndPrint(key) {
             updateStatus(key, '製作中');
@@ -139,7 +178,7 @@
             const encoder = new TextEncoder();
 
             // ========================================================
-            // 🖨️ 任務一：發送給「廚房出單機」
+            // 🖨️ 任務一：發送給「廚房出單機」 (維持不變)
             // ========================================================
             let oTime = new Date(order.time);
             let formattedOrderTime = order.time; 
@@ -190,61 +229,81 @@
             fetch("https://api.feieyun.cn/Api/Open/", { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: receiptParams.toString() });
 
             // ========================================================
-            // 🏷️ 任務二：發送給「標籤貼紙機」 (無時間、外帶內用(桌)上移、字體全放大、備註防卡版)
+            // 🏷️ 任務二：發送給「標籤貼紙機」 (套餐拆解邏輯)
             // ========================================================
             let labelJobs = [];
             
-            // 💡 1. 精準算出這張單「總共有幾份實體商品」，作為進度的分母
-            let finalTotalQty = 0;
-            order.items.forEach(item => { finalTotalQty += (parseInt(item.q, 10) || 1); });
+            // 💡 1. 預先算出「真正要印幾張貼紙」
+            let finalTotalLabels = 0;
+            order.items.forEach(item => { 
+                let qty = parseInt(item.q, 10) || 1;
+                if (item.type === 'combo') {
+                    // 套餐基本有主餐+飲料 = 2張
+                    finalTotalLabels += (2 * qty);
+                    // 如果是兒童餐，多一張吐司 = 再+1張
+                    if (item.n === '兒童餐') finalTotalLabels += qty;
+                } else {
+                    // 一般單點商品就是 1 張
+                    finalTotalLabels += qty;
+                }
+            });
             
-            let currentItemCount = 0; // 追蹤現在印到第幾份
+            let currentItemCount = 0; // 追蹤現在印到第幾張貼紙
 
             order.items.forEach(item => {
                 let qty = parseInt(item.q, 10) || 1;
+                
                 for(let i = 1; i <= qty; i++) {
-                    currentItemCount++; // 每次印一張貼紙，進度就 +1
                     
-                    let singleLabel = `<SIZE>40,30</SIZE><DIRECTION>1</DIRECTION><PAGE>`; 
-                    
-                    // 💡 第一排 (Y=15)：單號 + 外帶/內用(X桌) + 進度，全擠在最上面，且高度皆為大字 (h=2)
-                    singleLabel += `<TEXT x="10" y="15" font="TSS24.BF2" w="2" h="2" r="0">#${order.orderNo}</TEXT>`; 
-                    
-                    // 💡 外帶/內用移到單號旁邊 (X=115)，且內用會加上「桌」字
-                    let methodStr = order.method === "內用" && order.table ? `內用(${order.table}桌)` : order.method;
-                    // 如果有寫內用幾桌比較長，字體就正常寬度，不然"外帶"就一起放大兩倍寬
-                    let mWidth = methodStr.length > 2 ? "1" : "2"; 
-                    singleLabel += `<TEXT x="115" y="15" font="TSS24.BF2" w="${mWidth}" h="2" r="0">${methodStr}</TEXT>`;
-                    
-                    // 💡 進度 (1/3) 移到最右邊 (X=230)
-                    singleLabel += `<TEXT x="230" y="15" font="TSS24.BF2" w="1" h="2" r="0">(${currentItemCount}/${finalTotalQty})</TEXT>`; 
-                    
-                    // 💡 第二排 (Y=70)：品名，兩倍高字體
-                    let nWidth = item.n.length > 6 ? "1" : "2"; 
-                    singleLabel += `<TEXT x="10" y="70" font="TSS24.BF2" w="${nWidth}" h="2" r="0">${item.n}</TEXT>`;        
-                    
-                    // 💡 第三排以後：空間全部留給備註！(因為底部時間拿掉了，Y=195的空間也解放了)
-                    if (item.d) {
-                        if (item.d.length > 26) {
-                            // 如果是超級龜毛客人 (>26字)，縮小字體(h=1)硬塞最多 4 行
-                            let rY = 125;
-                            for (let c = 0; c < item.d.length; c += 13) {
-                                if (rY > 215) break; 
-                                singleLabel += `<TEXT x="10" y="${rY}" font="TSS24.BF2" w="1" h="1" r="0">${item.d.substring(c, c + 13)}</TEXT>`;
-                                rY += 30;
+                    if (item.type === 'combo') {
+                        // 💡 這是套餐！開始拆解成多張貼紙！
+                        
+                        // 先把長長的備註字串拆開
+                        let parts = item.d ? item.d.split(' / ') : [];
+                        let drinkStr = "中紅"; // 預設飲料
+                        let drinkTempStr = ""; // 飲料溫度
+                        let mainFoodDescArr = []; // 主餐備註
+                        let noteStr = ""; // 客人手打備註
+                        let kidsJamStr = "巧克力"; // 兒童餐預設果醬
+
+                        parts.forEach(p => {
+                            if (p.startsWith('飲:')) {
+                                drinkStr = p.replace('飲:', '');
+                            } else if (p === '冰' || p === '去冰' || p === '溫' || p === '熱') {
+                                drinkTempStr = p;
+                            } else if (p.startsWith('備:')) {
+                                noteStr = p; // 備註統一印在主餐上
+                            } else if (p.startsWith('換:')) {
+                                kidsJamStr = p.replace('換:', '');
+                            } else {
+                                mainFoodDescArr.push(p);
                             }
-                        } else {
-                            // 一般情況，用兩倍大字(h=2)印 2 行，保證看得超清楚
-                            let rY = 125;
-                            for (let c = 0; c < item.d.length; c += 13) {
-                                singleLabel += `<TEXT x="10" y="${rY}" font="TSS24.BF2" w="1" h="2" r="0">${item.d.substring(c, c + 13)}</TEXT>`;
-                                rY += 55;
-                            }
+                        });
+                        if (noteStr) mainFoodDescArr.push(noteStr);
+                        
+                        // --- 印第一張：主餐 ---
+                        currentItemCount++;
+                        let mainFoodName = item.n; 
+                        let mainDesc = mainFoodDescArr.join(' / ');
+                        labelJobs.push(generateLabelStr(order, mainFoodName, mainDesc, currentItemCount, finalTotalLabels));
+
+                        // --- 印第二張：飲料 ---
+                        currentItemCount++;
+                        let drinkName = drinkStr;
+                        labelJobs.push(generateLabelStr(order, drinkName, drinkTempStr, currentItemCount, finalTotalLabels));
+
+                        // --- 印第三張 (只有兒童餐)：果醬吐司 ---
+                        if (item.n === '兒童餐') {
+                            currentItemCount++;
+                            let toastName = "果醬吐司";
+                            labelJobs.push(generateLabelStr(order, toastName, kidsJamStr, currentItemCount, finalTotalLabels));
                         }
+
+                    } else {
+                        // 💡 正常單點商品，直接印一張
+                        currentItemCount++;
+                        labelJobs.push(generateLabelStr(order, item.n, item.d, currentItemCount, finalTotalLabels));
                     }
-                    
-                    singleLabel += `</PAGE>`; 
-                    labelJobs.push(singleLabel);
                 }
             });
 
