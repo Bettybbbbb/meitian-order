@@ -32,10 +32,10 @@
         .opt-checkbox:checked + div { background-color: #fff7ed; border-color: #ea580c; color: #ea580c !important; font-weight: bold; }
     </style>
 </head>
-<body class="bg-gray-50 flex justify-center h-screen overflow-hidden text-gray-800 font-sans">
+<body class="bg-gray-50 flex justify-center h-[100dvh] overflow-hidden text-gray-800 font-sans">
     <div class="w-full max-w-md bg-white h-full flex flex-col relative shadow-2xl border-x">
         
-        <header class="bg-orange-500 text-white px-4 py-5 shrink-0 shadow-lg z-20">
+        <header class="bg-orange-500 text-white px-4 py-5 shrink-0 shadow-md z-50 relative">
             <div class="flex justify-between items-center">
                 <div class="flex-1 mr-2 text-white">
                     <h1 class="text-2xl font-black italic tracking-wider text-white">美天早餐</h1>
@@ -43,15 +43,16 @@
                 </div>
                 <div class="flex gap-2 items-center">
                     <button onclick="toggleHistory()" class="bg-orange-700/50 text-white px-3 py-2 rounded-full font-bold text-sm border border-orange-400/30">📄 紀錄</button>
-                    <button onclick="toggleCart()" class="bg-white text-orange-600 px-3 py-2 rounded-full font-black shadow-md flex items-center gap-2">
+                    <button onclick="toggleCart()" class="bg-white text-orange-600 px-3 py-2 rounded-full font-black shadow-md flex items-center gap-2 hover:scale-105 active:scale-95 transition-transform">
                         🛒 <span id="cart-count" class="bg-red-500 text-white px-2 py-0.5 rounded-full text-xs">0</span>
                     </button>
                 </div>
             </div>
         </header>
 
-        <div id="nav-bar" class="flex overflow-x-auto py-3 px-2 bg-white gap-1 hide-scrollbar shrink-0 border-b sticky top-0 z-10 whitespace-nowrap shadow-sm items-stretch"></div>
-        <div id="menu-box" class="flex-1 overflow-y-auto p-4 space-y-8 pb-32 bg-gray-50"></div>
+        <div id="nav-bar" class="flex overflow-x-auto py-3 px-2 bg-white gap-1 hide-scrollbar shrink-0 border-b z-40 whitespace-nowrap shadow-sm items-stretch relative"></div>
+        
+        <div id="menu-box" class="flex-1 overflow-y-auto p-4 space-y-8 pb-32 bg-gray-50 relative z-0"></div>
 
         <button id="floating-track-btn" onclick="showTrackingScreen()" class="hidden fixed bottom-24 right-4 bg-orange-600 text-white px-5 py-3 rounded-full shadow-2xl z-40 animate-bounce font-black border-2 border-white">
             🏃 追蹤進度
@@ -186,14 +187,13 @@
 
         let cart = []; let curItem = null; let basePrice = 0; let userMethod = "外帶"; let userTable = ""; let userTime = ""; let editingIndex = -1;
         let curModalQty = 1;
-        let isUserViewingMenu = false; // 追蹤用戶是否手動縮小了追蹤畫面
+        let isUserViewingMenu = false;
 
         function checkActiveOrder() {
             const activeOrderId = localStorage.getItem('meitian_active_order');
             if (activeOrderId) trackLiveOrder(activeOrderId, false);
         }
 
-        // 💡 追蹤畫面控制
         function showTrackingScreen() {
             isUserViewingMenu = false;
             document.getElementById('live-tracking-screen').classList.remove('hidden');
@@ -218,21 +218,18 @@
                     return; 
                 }
                 
-                // 訂單完成
                 if (data.status === "已完成") {
                     hideTrackingScreen();
                     document.getElementById('floating-track-btn').classList.add('hidden');
                     localStorage.removeItem('meitian_active_order');
                     alert("✅ 您的餐點已完成，感謝您的購買！");
                     
-                    // 順便把歷史紀錄的狀態也改成已完成
                     let myOrders = JSON.parse(localStorage.getItem('meitian_history') || '[]');
                     let found = myOrders.find(o => o.orderNo === data.orderNo);
                     if(found) { found.status = "已完成"; localStorage.setItem('meitian_history', JSON.stringify(myOrders)); }
                     return;
                 }
 
-                // 更新畫面資料
                 document.getElementById('track-order-no-big').innerText = data.orderNo;
                 document.getElementById('track-method').innerText = data.method + (data.table ? ` (${data.table})` : '');
                 document.getElementById('track-time').innerText = data.pickupTime;
@@ -262,17 +259,14 @@
                 });
                 
                 document.getElementById('progress-line-big').style.width = ((step-1)/2 * 100) + '%';
-                
                 if (step === 3 && "vibrate" in navigator) navigator.vibrate([200, 100, 200]);
 
-                // 控制顯示邏輯
                 if (!isUserViewingMenu || forceOpen || step === 3) {
                     showTrackingScreen();
                 } else {
                     document.getElementById('floating-track-btn').classList.remove('hidden');
                 }
                 
-                // 同步更新歷史紀錄狀態
                 let myOrders = JSON.parse(localStorage.getItem('meitian_history') || '[]');
                 let found = myOrders.find(o => o.orderNo === data.orderNo);
                 if(found && found.status !== data.status) { found.status = data.status; localStorage.setItem('meitian_history', JSON.stringify(myOrders)); }
@@ -297,6 +291,14 @@
             return true;
         }
 
+        // 💡 1. 加入套餐清單
+        const list_combo = [
+            {n:"1號餐(鐵板麵+豬排+蛋+中紅)", p:105},
+            {n:"2號餐(原味蛋餅+熱狗+中紅)", p:65},
+            {n:"3號餐(起士蛋吐司+小雞球+中紅)", p:80},
+            {n:"4號餐(香雞堡+薯條+中紅)", p:90}
+        ];
+
         const list_toast = [{n:"煎蛋吐司",p:30},{n:"肉鬆蛋吐司",p:35},{n:"火腿蛋吐司",p:35},{n:"培根蛋吐司",p:35},{n:"起士蛋吐司",p:35},{n:"薯餅蛋吐司",p:40},{n:"肉排蛋吐司",p:40},{n:"鮪魚蛋吐司",p:40},{n:"香雞排蛋吐司",p:45},{n:"里肌豬排蛋吐司",p:45},{n:"鮮蝦蛋吐司",p:45},{n:"燻雞蛋吐司",p:45},{n:"藍帶豬排蛋吐司",p:60},{n:"雞柳蛋吐司",p:60},{n:"明太鱈魚蛋吐司",p:65},{n:"菲力雞排蛋吐司",p:65},{n:"卡拉雞腿蛋吐司(辣味)",p:65}];
         const list_burger = [{n:"煎蛋漢堡",p:35},{n:"肉鬆蛋漢堡",p:40},{n:"火腿蛋漢堡",p:40},{n:"培根蛋漢堡",p:40},{n:"起士蛋漢堡",p:40},{n:"薯餅蛋漢堡",p:45},{n:"肉排蛋漢堡",p:45},{n:"鮪魚蛋漢堡",p:45},{n:"香雞排蛋漢堡",p:50},{n:"里肌豬排蛋漢堡",p:50},{n:"鮮蝦蛋漢堡",p:50},{n:"燻雞蛋漢堡",p:50},{n:"藍帶豬排蛋漢堡",p:65},{n:"雞柳蛋漢堡",p:65},{n:"明太鱈魚蛋漢堡",p:70},{n:"菲力雞排蛋漢堡",p:70},{n:"卡拉雞腿蛋漢堡(辣味)",p:70}];
         const list_baguette = [{n:"煎蛋軟法",p:50},{n:"肉鬆軟法",p:55},{n:"火腿軟法",p:55},{n:"培根軟法",p:55},{n:"起士軟法",p:55},{n:"薯餅軟法",p:60},{n:"肉排軟法",p:60},{n:"鮪魚軟法",p:60},{n:"香雞排軟法",p:65},{n:"里肌豬排軟法",p:65},{n:"鮮蝦軟法",p:65},{n:"燻雞軟法",p:65},{n:"藍帶豬排軟法",p:80},{n:"明太鱈魚軟法",p:85},{n:"菲力雞排軟法",p:85},{n:"卡拉雞腿軟法(辣味)",p:85}];
@@ -305,7 +307,9 @@
         const list_jam = ["奶油", "花生", "草莓", "巧克力", "椰香", "奶酥", "藍莓", "香蒜"];
         const list_drinks = [{n:"紅茶", m:15, l:20}, {n:"奶茶", m:20, l:25}, {n:"豆漿", m:20}, {n:"無糖豆漿", m:20}, {n:"黑芝麻", m:30}, {n:"杏仁漿", m:30}, {n:"燕麥薏仁", m:30}, {n:"鴛鴦", m:25, l:30}, {n:"鮮奶茶", m:30, l:35}, {n:"特調咖啡", m:25, l:30}, {n:"香濃可可", m:30}, {n:"美式咖啡", m:40, l:50}, {n:"鮮奶咖啡", m:50, l:60}, {n:"柳橙汁", m:25, l:30, iceOnly:true}, {n:"檸檬紅茶", m:25, l:30, iceOnly:true}, {n:"瓶裝牛奶", m:30, bottle:true}];
 
+        // 💡 2. 將套餐組合放進選單的第一個
         const menuData = [
+            { id: "combo", cat: "超值套餐", type: "combo", items: list_combo },
             { id: "toast", cat: "吐司", type: "toast", items: list_toast },
             { id: "burger", cat: "漢堡", type: "burger", items: list_burger },
             { id: "baguette", cat: "軟法", type: "bread_no_egg", items: list_baguette },
@@ -320,7 +324,7 @@
         ];
 
         function init() {
-            checkActiveOrder(); // 💡 載入時先檢查有沒有尚未完成的訂單
+            checkActiveOrder(); 
             
             // 💡 記憶客人的姓名與電話
             document.getElementById('order-name').value = localStorage.getItem('meitian_name') || '';
@@ -395,7 +399,6 @@
             calcPrice();
         }
 
-        // 💡 自動合併購物車功能
         function addToCart() {
             let p = parseInt(document.getElementById('modal-price-display').innerText.replace('$','')) / curModalQty; 
             let n = curItem.n; let details = []; let rawState = { radios: {}, checks: [], selects: {} };
@@ -428,12 +431,10 @@
             updateCart(); closeModal();
         }
 
-        // 🛡️ 防連點金鐘罩 + 記憶姓名電話
         function submitOrder() {
             const name = document.getElementById('order-name').value; const phone = document.getElementById('order-phone').value;
             if (!name || !phone) return alert("請填寫姓名和電話喔！");
             
-            // 💡 紀錄到 localStorage
             localStorage.setItem('meitian_name', name);
             localStorage.setItem('meitian_phone', phone);
             
@@ -480,7 +481,6 @@
         }
 
         function updateCart() {
-            // 💡 購物車圖示紅點計算總數量
             let totalQty = 0; cart.forEach(i => totalQty += i.q);
             document.getElementById('cart-count').innerText = totalQty; 
 
@@ -521,6 +521,7 @@
         function toggleTableInput() { const method = document.querySelector('input[name="order_method"]:checked').value; document.getElementById('setup-table').classList.toggle('hidden', method !== '內用'); }
         function startOrdering() { userMethod = document.querySelector('input[name="order_method"]:checked').value; userTable = document.getElementById('setup-table').value; userTime = document.getElementById('setup-time').value; if(userMethod === '內用' && !userTable) return alert('請輸入桌號'); document.getElementById('welcome-modal').classList.add('hidden'); }
         
+        // 💡 確保這裡使用的是您原本的漂亮白色卡片樣式！
         function renderHistory() {
             let myOrders = JSON.parse(localStorage.getItem('meitian_history') || '[]');
             const hDiv = document.getElementById('history-items');
