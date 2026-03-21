@@ -6,9 +6,9 @@
     const HOLIDAYS = [];               // 🏖️ 特殊公休日
     const CLOSED_DAYS = [0];           // 🗓️ 每週固定公休 (0是週日)
     
-    const OPEN_TIME = "00:00";          // ⏰ 開門時間
-    const LAST_ORDER = "23:59";        // ⏰ 最後收單/打烊時間 (23:59 關閉網頁)
-    const MAX_PICKUP = "23:59";        // ⏰ 選單最晚取餐時間
+    const OPEN_TIME = "05:30";          // ⏰ 開門時間
+    const LAST_ORDER = "14:00";        // ⏰ 最後收單/打烊時間 (關閉網頁)
+    const MAX_PICKUP = "14:15";        // ⏰ 選單最晚取餐時間
     // ============================================================
 </script>
 
@@ -186,14 +186,13 @@
 
         let cart = []; let curItem = null; let basePrice = 0; let userMethod = "外帶"; let userTable = ""; let userTime = ""; let editingIndex = -1;
         let curModalQty = 1;
-        let isUserViewingMenu = false; // 追蹤用戶是否手動縮小了追蹤畫面
+        let isUserViewingMenu = false;
 
         function checkActiveOrder() {
             const activeOrderId = localStorage.getItem('meitian_active_order');
             if (activeOrderId) trackLiveOrder(activeOrderId, false);
         }
 
-        // 💡 追蹤畫面控制
         function showTrackingScreen() {
             isUserViewingMenu = false;
             document.getElementById('live-tracking-screen').classList.remove('hidden');
@@ -218,21 +217,18 @@
                     return; 
                 }
                 
-                // 訂單完成
                 if (data.status === "已完成") {
                     hideTrackingScreen();
                     document.getElementById('floating-track-btn').classList.add('hidden');
                     localStorage.removeItem('meitian_active_order');
                     alert("✅ 您的餐點已完成，感謝您的購買！");
                     
-                    // 順便把歷史紀錄的狀態也改成已完成
                     let myOrders = JSON.parse(localStorage.getItem('meitian_history') || '[]');
                     let found = myOrders.find(o => o.orderNo === data.orderNo);
                     if(found) { found.status = "已完成"; localStorage.setItem('meitian_history', JSON.stringify(myOrders)); }
                     return;
                 }
 
-                // 更新畫面資料
                 document.getElementById('track-order-no-big').innerText = data.orderNo;
                 document.getElementById('track-method').innerText = data.method + (data.table ? ` (${data.table})` : '');
                 document.getElementById('track-time').innerText = data.pickupTime;
@@ -262,17 +258,14 @@
                 });
                 
                 document.getElementById('progress-line-big').style.width = ((step-1)/2 * 100) + '%';
-                
                 if (step === 3 && "vibrate" in navigator) navigator.vibrate([200, 100, 200]);
 
-                // 控制顯示邏輯
                 if (!isUserViewingMenu || forceOpen || step === 3) {
                     showTrackingScreen();
                 } else {
                     document.getElementById('floating-track-btn').classList.remove('hidden');
                 }
                 
-                // 同步更新歷史紀錄狀態
                 let myOrders = JSON.parse(localStorage.getItem('meitian_history') || '[]');
                 let found = myOrders.find(o => o.orderNo === data.orderNo);
                 if(found && found.status !== data.status) { found.status = data.status; localStorage.setItem('meitian_history', JSON.stringify(myOrders)); }
@@ -320,8 +313,14 @@
         ];
 
         function init() {
-            checkActiveOrder(); // 💡 載入時先檢查有沒有尚未完成的訂單
+            checkActiveOrder(); 
             
+            // 💡 姓名與電話的記憶吐司！
+            const savedName = localStorage.getItem('meitian_name') || '';
+            const savedPhone = localStorage.getItem('meitian_phone') || '';
+            document.getElementById('order-name').value = savedName;
+            document.getElementById('order-phone').value = savedPhone;
+
             const slots = generateTimeSlots(15); if (!checkStoreStatus()) return;
             document.getElementById('setup-time').innerHTML = slots.map(t => `<option value="${t}">${t}</option>`).join('');
             document.getElementById('welcome-modal').classList.remove('hidden'); document.getElementById('welcome-modal').classList.add('flex');
@@ -391,7 +390,6 @@
             calcPrice();
         }
 
-        // 💡 購物車自動合併雷達
         function addToCart() {
             let p = parseInt(document.getElementById('modal-price-display').innerText.replace('$','')) / curModalQty; 
             let n = curItem.n; let details = []; let rawState = { radios: {}, checks: [], selects: {} };
@@ -424,16 +422,17 @@
             updateCart(); closeModal();
         }
 
-        // 🛡️ 防連點金鐘罩啟動！
         function submitOrder() {
             const name = document.getElementById('order-name').value; const phone = document.getElementById('order-phone').value;
             if (!name || !phone) return alert("請填寫姓名和電話喔！");
             
-            // 💡 抓取按鈕，如果已經被鎖定了就立刻擋掉
+            // 💡 記憶吐司：客人只要送出成功，就把名字電話記在手機裡
+            localStorage.setItem('meitian_name', name);
+            localStorage.setItem('meitian_phone', phone);
+            
             const submitBtn = document.getElementById('btn-submit');
             if (submitBtn.disabled) return;
             
-            // 💡 立刻鎖死按鈕、變灰、改文字
             submitBtn.disabled = true;
             submitBtn.innerText = '🚀 訂單傳送中 ⏳...';
             submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
@@ -443,7 +442,6 @@
             
             database.ref('metadata/daily_counters/' + todayStr).transaction((v) => (v || 0) + 1, (err, comm, snap) => {
                 if (err) {
-                    // 如果網路不穩失敗了，把按鈕解鎖讓客人重試
                     submitBtn.disabled = false;
                     submitBtn.innerText = '🚀 確認送出訂單';
                     submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -475,11 +473,8 @@
         }
 
         function updateCart() {
-            // 💡 修正：不再算「有幾種」商品，而是把每個商品的數量加總起來！
             let totalItemsCount = 0;
-            cart.forEach(i => {
-                totalItemsCount += i.q;
-            });
+            cart.forEach(i => { totalItemsCount += i.q; });
             document.getElementById('cart-count').innerText = totalItemsCount; 
             
             const cDiv = document.getElementById('cart-items'); cDiv.innerHTML = '';
