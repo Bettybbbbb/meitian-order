@@ -190,11 +190,11 @@
             fetch("https://api.feieyun.cn/Api/Open/", { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: receiptParams.toString() });
 
             // ========================================================
-            // 🏷️ 任務二：發送給「標籤貼紙機」 (總進度 + 粗大字體版)
+            // 🏷️ 任務二：發送給「標籤貼紙機」 (時間移除、外帶上移、字體全放大、備註自動排版)
             // ========================================================
             let labelJobs = [];
             
-            // 💡 先算出這張單「總共有幾份」，裝袋核對用！
+            // 💡 1. 先精準算出這張單「總共有幾份實體商品」，作為進度的分母
             let finalTotalQty = 0;
             order.items.forEach(item => { finalTotalQty += (parseInt(item.q, 10) || 1); });
             
@@ -207,37 +207,46 @@
                     
                     let singleLabel = `<SIZE>40,30</SIZE><DIRECTION>1</DIRECTION><PAGE>`; 
                     
-                    // 💡 1. 單號 + 外帶/內用 (y=15，字體放大兩倍，外帶/內用移到單號旁邊)
+                    // 💡 第一排 (Y=15)：單號 + 外帶/內用 + 進度，全擠在最上面，且高度皆為大字 (h=2)
                     singleLabel += `<TEXT x="10" y="15" font="TSS24.BF2" w="2" h="2" r="0">#${order.orderNo}</TEXT>`; 
+                    
+                    // 外帶/內用移到單號旁邊 (X=115)
                     let methodStr = order.method + (order.table ? `(${order.table})` : '');
-                    // 如果有寫桌號比較長，字體就正常寬度，不然就一起放大兩倍寬
-                    let mWidth = methodStr.length > 2 ? "1" : "2"; 
-                    singleLabel += `<TEXT x="150" y="15" font="TSS24.BF2" w="${mWidth}" h="2" r="0">${methodStr}</TEXT>`;
+                    singleLabel += `<TEXT x="115" y="15" font="TSS24.BF2" w="1" h="2" r="0">${methodStr}</TEXT>`;
                     
-                    // 💡 2. 品名 (y=75，字體高度放大兩倍，寬度依字數調整)
+                    // 進度 (1/3) 移到最右邊 (X=230)
+                    singleLabel += `<TEXT x="230" y="15" font="TSS24.BF2" w="1" h="2" r="0">(${currentItemCount}/${finalTotalQty})</TEXT>`; 
+                    
+                    // 💡 第二排 (Y=70)：品名，兩倍高字體
                     let nWidth = item.n.length > 6 ? "1" : "2"; 
-                    singleLabel += `<TEXT x="10" y="75" font="TSS24.BF2" w="${nWidth}" h="2" r="0">${item.n}</TEXT>`;        
+                    singleLabel += `<TEXT x="10" y="70" font="TSS24.BF2" w="${nWidth}" h="2" r="0">${item.n}</TEXT>`;        
                     
-                    // 💡 3. 備註 (y=135，字體高度放大兩倍)
+                    // 💡 第三排以後：空間全部留給備註！
                     if (item.d) {
-                        if (item.d.length > 13) {
-                            // 如果備註超級長，自動切成兩行
-                            singleLabel += `<TEXT x="10" y="135" font="TSS24.BF2" w="1" h="1" r="0">${item.d.substring(0, 13)}</TEXT>`;   
-                            singleLabel += `<TEXT x="10" y="165" font="TSS24.BF2" w="1" h="1" r="0">${item.d.substring(13, 26)}</TEXT>`;   
+                        if (item.d.length > 26) {
+                            // 如果是超級龜毛客人 (>26字)，縮小字體(h=1)硬塞最多 4 行
+                            let rY = 125;
+                            for (let c = 0; c < item.d.length; c += 13) {
+                                if (rY > 215) break; 
+                                singleLabel += `<TEXT x="10" y="${rY}" font="TSS24.BF2" w="1" h="1" r="0">${item.d.substring(c, c + 13)}</TEXT>`;
+                                rY += 30;
+                            }
                         } else {
-                            singleLabel += `<TEXT x="10" y="135" font="TSS24.BF2" w="1" h="2" r="0">${item.d}</TEXT>`;   
+                            // 一般情況，用兩倍大字(h=2)印 2 行，保證看得超清楚
+                            let rY = 125;
+                            for (let c = 0; c < item.d.length; c += 13) {
+                                singleLabel += `<TEXT x="10" y="${rY}" font="TSS24.BF2" w="1" h="2" r="0">${item.d.substring(c, c + 13)}</TEXT>`;
+                                rY += 55;
+                            }
                         }
                     }
-                    
-                    // 💡 4. 底部資訊：拿掉時間，只保留超大總進度 (y=195)
-                    singleLabel += `<TEXT x="10" y="195" font="TSS24.BF2" w="2" h="2" r="0">(${currentItemCount}/${finalTotalQty})</TEXT>`; 
                     
                     singleLabel += `</PAGE>`; 
                     labelJobs.push(singleLabel);
                 }
             });
 
-            // 排隊送出！每次送一張，停頓 0.8 秒，絕不重疊！
+            // 暴力破解法：排隊送出！每次送一張，停頓 0.8 秒，絕不漏單！
             for (let j = 0; j < labelJobs.length; j++) {
                 let currentStime = Math.floor(Date.now() / 1000).toString();
                 let currentData = encoder.encode(USER + UKEY + currentStime);
