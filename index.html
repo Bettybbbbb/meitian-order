@@ -6,9 +6,9 @@
     const HOLIDAYS = [];               // 🏖️ 特殊公休日
     const CLOSED_DAYS = [0];           // 🗓️ 每週固定公休 (0是週日)
     
-    const OPEN_TIME = "05:30";          // ⏰ 開門時間
-    const LAST_ORDER = "14:00";        // ⏰ 最後收單/打烊時間 (關閉網頁)
-    const MAX_PICKUP = "14:15";        // ⏰ 選單最晚取餐時間
+    const OPEN_TIME = "00:00";          // ⏰ 開門時間
+    const LAST_ORDER = "23:59";        // ⏰ 最後收單/打烊時間 (23:59 關閉網頁)
+    const MAX_PICKUP = "23:59";        // ⏰ 選單最晚取餐時間
     // ============================================================
 </script>
 
@@ -186,13 +186,14 @@
 
         let cart = []; let curItem = null; let basePrice = 0; let userMethod = "外帶"; let userTable = ""; let userTime = ""; let editingIndex = -1;
         let curModalQty = 1;
-        let isUserViewingMenu = false;
+        let isUserViewingMenu = false; // 追蹤用戶是否手動縮小了追蹤畫面
 
         function checkActiveOrder() {
             const activeOrderId = localStorage.getItem('meitian_active_order');
             if (activeOrderId) trackLiveOrder(activeOrderId, false);
         }
 
+        // 💡 追蹤畫面控制
         function showTrackingScreen() {
             isUserViewingMenu = false;
             document.getElementById('live-tracking-screen').classList.remove('hidden');
@@ -217,18 +218,21 @@
                     return; 
                 }
                 
+                // 訂單完成
                 if (data.status === "已完成") {
                     hideTrackingScreen();
                     document.getElementById('floating-track-btn').classList.add('hidden');
                     localStorage.removeItem('meitian_active_order');
                     alert("✅ 您的餐點已完成，感謝您的購買！");
                     
+                    // 順便把歷史紀錄的狀態也改成已完成
                     let myOrders = JSON.parse(localStorage.getItem('meitian_history') || '[]');
                     let found = myOrders.find(o => o.orderNo === data.orderNo);
                     if(found) { found.status = "已完成"; localStorage.setItem('meitian_history', JSON.stringify(myOrders)); }
                     return;
                 }
 
+                // 更新畫面資料
                 document.getElementById('track-order-no-big').innerText = data.orderNo;
                 document.getElementById('track-method').innerText = data.method + (data.table ? ` (${data.table})` : '');
                 document.getElementById('track-time').innerText = data.pickupTime;
@@ -258,14 +262,17 @@
                 });
                 
                 document.getElementById('progress-line-big').style.width = ((step-1)/2 * 100) + '%';
+                
                 if (step === 3 && "vibrate" in navigator) navigator.vibrate([200, 100, 200]);
 
+                // 控制顯示邏輯
                 if (!isUserViewingMenu || forceOpen || step === 3) {
                     showTrackingScreen();
                 } else {
                     document.getElementById('floating-track-btn').classList.remove('hidden');
                 }
                 
+                // 同步更新歷史紀錄狀態
                 let myOrders = JSON.parse(localStorage.getItem('meitian_history') || '[]');
                 let found = myOrders.find(o => o.orderNo === data.orderNo);
                 if(found && found.status !== data.status) { found.status = data.status; localStorage.setItem('meitian_history', JSON.stringify(myOrders)); }
@@ -313,13 +320,11 @@
         ];
 
         function init() {
-            checkActiveOrder(); 
+            checkActiveOrder(); // 💡 載入時先檢查有沒有尚未完成的訂單
             
-            // 💡 姓名與電話的記憶吐司！
-            const savedName = localStorage.getItem('meitian_name') || '';
-            const savedPhone = localStorage.getItem('meitian_phone') || '';
-            document.getElementById('order-name').value = savedName;
-            document.getElementById('order-phone').value = savedPhone;
+            // 💡 記憶客人的姓名與電話
+            document.getElementById('order-name').value = localStorage.getItem('meitian_name') || '';
+            document.getElementById('order-phone').value = localStorage.getItem('meitian_phone') || '';
 
             const slots = generateTimeSlots(15); if (!checkStoreStatus()) return;
             document.getElementById('setup-time').innerHTML = slots.map(t => `<option value="${t}">${t}</option>`).join('');
@@ -390,6 +395,7 @@
             calcPrice();
         }
 
+        // 💡 自動合併購物車功能
         function addToCart() {
             let p = parseInt(document.getElementById('modal-price-display').innerText.replace('$','')) / curModalQty; 
             let n = curItem.n; let details = []; let rawState = { radios: {}, checks: [], selects: {} };
@@ -422,11 +428,12 @@
             updateCart(); closeModal();
         }
 
+        // 🛡️ 防連點金鐘罩 + 記憶姓名電話
         function submitOrder() {
             const name = document.getElementById('order-name').value; const phone = document.getElementById('order-phone').value;
             if (!name || !phone) return alert("請填寫姓名和電話喔！");
             
-            // 💡 記憶吐司：客人只要送出成功，就把名字電話記在手機裡
+            // 💡 紀錄到 localStorage
             localStorage.setItem('meitian_name', name);
             localStorage.setItem('meitian_phone', phone);
             
@@ -473,10 +480,10 @@
         }
 
         function updateCart() {
-            let totalItemsCount = 0;
-            cart.forEach(i => { totalItemsCount += i.q; });
-            document.getElementById('cart-count').innerText = totalItemsCount; 
-            
+            // 💡 購物車圖示紅點計算總數量
+            let totalQty = 0; cart.forEach(i => totalQty += i.q);
+            document.getElementById('cart-count').innerText = totalQty; 
+
             const cDiv = document.getElementById('cart-items'); cDiv.innerHTML = '';
             let t = 0;
             cart.forEach((i, idx) => {
