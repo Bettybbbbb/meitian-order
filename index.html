@@ -391,6 +391,7 @@
             calcPrice();
         }
 
+        // 💡 購物車自動合併雷達
         function addToCart() {
             let p = parseInt(document.getElementById('modal-price-display').innerText.replace('$','')) / curModalQty; 
             let n = curItem.n; let details = []; let rawState = { radios: {}, checks: [], selects: {} };
@@ -406,8 +407,20 @@
             document.querySelectorAll('#modal-dynamic-options input[type="checkbox"]:checked').forEach(c => { rawState.checks.push(c.value); details.push(c.value.split('|')[0]); });
             if (document.getElementById('combo-drink')) { rawState.selects['combo-drink'] = document.getElementById('combo-drink').value; details.push(`飲:${document.getElementById('combo-drink').value.split('|')[0]}`); }
             let note = document.getElementById('modal-note').value; if (note) details.push(`備:${note}`);
-            let cartItemObj = { n, p, q: curModalQty, d: details.join(' / '), baseItem: curItem, type: curItem.type, raw: rawState, note };
-            if (editingIndex > -1) cart[editingIndex] = cartItemObj; else cart.push(cartItemObj);
+            
+            let detailsStr = details.join(' / ');
+            let cartItemObj = { n, p, q: curModalQty, d: detailsStr, baseItem: curItem, type: curItem.type, raw: rawState, note };
+            
+            if (editingIndex > -1) {
+                cart[editingIndex] = cartItemObj; 
+            } else {
+                let foundIndex = cart.findIndex(item => item.n === cartItemObj.n && item.d === cartItemObj.d && item.note === cartItemObj.note);
+                if (foundIndex > -1) {
+                    cart[foundIndex].q += cartItemObj.q;
+                } else {
+                    cart.push(cartItemObj);
+                }
+            }
             updateCart(); closeModal();
         }
 
